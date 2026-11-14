@@ -3,6 +3,7 @@
  * Cuánto cambió tu patrimonio un mes, cuánto pusiste tú y cuánto el mercado, producto a producto,
  * y el histórico de los últimos 18 meses.
  */
+import { Link, Tabs } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -40,6 +41,15 @@ export default function Mes() {
 
   return (
     <ScrollView contentContainerStyle={estilos.pagina}>
+      <Tabs.Screen
+        options={{
+          headerRight: () => (
+            <Link href={{ pathname: '/compartir-mes', params: { mes: String(i) } }} style={{ color: c.acento, fontSize: 15, fontWeight: '700', marginRight: 16 }}>
+              Compartir
+            </Link>
+          ),
+        }}
+      />
       <View style={estilos.selector}>
         <Flecha c={c} texto="‹" desactivada={i === 0} alPulsar={() => setElegido(i - 1)} />
         <Text style={[estilos.mes, { color: c.tinta }]}>{etiquetaMes(r.mes)}</Text>
