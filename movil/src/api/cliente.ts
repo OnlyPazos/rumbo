@@ -9,7 +9,7 @@
  *   (ya vienen escritos para enseñárselos a la persona).
  */
 import type {
-  Cartera, Colchon, CopiaSeguridad, FechaISO, InfoPerfiles, Movimiento, Objetivo, Producto,
+  Cartera, Colchon, CopiaSeguridad, FechaISO, InfoPerfiles, InformeFiscal, InformeImportacion, RespuestaTraspaso, Movimiento, Objetivo, Producto,
   RepartoObjetivo, RespuestaCambio, RespuestaCartera, RespuestaPanel, ResultadoBusqueda,
   Valoracion, Version,
 } from './tipos';
@@ -65,8 +65,8 @@ export interface FormularioValoracion {
   aportado?: NumeroOTexto;
 }
 
-/** Archivo para subir (importar o recuperar una copia). En web vale un File/Blob. */
-export type ArchivoSubida = { uri: string; name: string; type?: string } | Blob;
+/** Archivo para subir (importar o recuperar una copia): { uri, name, type } en el móvil; un File en web. */
+export type ArchivoSubida = { uri: string; name: string; type?: string } | File;
 
 /**
  * Acepta lo que la persona pegue: «192.168.1.50:8765», «http://nas:8765/» o la dirección entera
@@ -260,8 +260,8 @@ export class ClienteRumbo {
 
   // ------------------------------------------------------------ Renta
 
-  fiscal(ano?: number) {
-    return this.get<{ ok: true; csv: string; [k: string]: unknown }>('/api/fiscal', { ano });
+  fiscal(ano?: string) {
+    return this.get<InformeFiscal>('/api/fiscal', { ano });
   }
 
   // ------------------------------------------------------------ importar
@@ -271,15 +271,16 @@ export class ClienteRumbo {
     form.append('origen', origen);
     if (opciones.texto) form.append('texto', opciones.texto);
     for (const a of opciones.archivos ?? []) form.append('archivos', a as any);
-    return this.json<{ ok: true; token: string; informe: Record<string, unknown> }>('POST', '/api/importar/previsualizar', { form });
+    return this.json<{ ok: true; token: string; informe: InformeImportacion }>('POST', '/api/importar/previsualizar', { form });
   }
 
-  revisarImportacion(token: string, respuestas: Record<string, unknown>) {
-    return this.post<{ ok: true; token: string; informe: Record<string, unknown> }>('/api/importar/revisar', { token, respuestas });
+  revisarImportacion(token: string, respuestas: Record<string, RespuestaTraspaso>) {
+    return this.post<{ ok: true; token: string; informe: InformeImportacion }>('/api/importar/revisar', { token, respuestas });
   }
 
-  confirmarImportacion(token: string, respuestas: Record<string, unknown> = {}) {
-    return this.post<RespuestaCambio<null> & { informe: Record<string, number> }>('/api/importar/confirmar', { token, respuestas });
+  confirmarImportacion(token: string, respuestas: Record<string, RespuestaTraspaso> = {}) {
+    return this.post<RespuestaCambio<null> & { informe: { añadidos: number; repetidos: number; saldos: number; sustituidos: number; traspasos: number } }>(
+      '/api/importar/confirmar', { token, respuestas });
   }
 
   promptIA() {

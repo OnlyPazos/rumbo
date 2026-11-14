@@ -13,6 +13,7 @@ import { ErrorRumbo } from '@/api/cliente';
 import type { Cartera, Fuente, Modo, Producto, ResultadoBusqueda, TipoProducto } from '@/api/tipos';
 import { Boton, Campo, Chips, confirmar } from '@/componentes/Formulario';
 import { fmtFecha } from '@/formato';
+import { INICIO } from '@/navegacion/rutas';
 import { useSesion } from '@/sesion/contexto';
 import { RADIO, colorSlot, useColores } from '@/tema';
 
@@ -160,7 +161,7 @@ export default function EditarProducto() {
     setGuardando(true);
     try {
       await cliente.borrar('productos', id);
-      router.dismissTo('/');
+      router.dismissTo(INICIO);
     } catch (e) {
       setErrores(e instanceof ErrorRumbo ? e.errores : [String(e)]);
       setGuardando(false);

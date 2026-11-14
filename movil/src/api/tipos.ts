@@ -245,7 +245,77 @@ export interface ResumenMes {
   nuevo: number;
   mercado: number;
   rentabilidad: number | null;
-  porProducto: Record<string, unknown>;
+  porProducto: Record<string, { inicio: number; fin: number; aportado: number; mercado: number; nuevo?: number }>;
+}
+
+/** Tu rentabilidad cada año (de la cartera y de cada producto), limpia de cuándo metiste el dinero. */
+export interface RentabilidadAnual {
+  anos: string[];
+  cartera: (number | null)[];
+  /** Año incompleto (el primero o el actual). */
+  parcial: boolean[];
+  porProducto: Record<string, (number | null)[]>;
+  /** Desde qué día cuenta cada año (el de la primera compra), si no es el 1 de enero. */
+  desde: Record<string, (FechaISO | null)[]>;
+  vendido: Record<string, boolean[]>;
+}
+
+export interface MetricasCartera {
+  rentTotal: number;
+  /** Anualizada. */
+  cagr: number;
+  vol: number;
+  sharpe: number | null;
+  maxDD: number;
+  maxDDFecha: FechaISO;
+  desde: FechaISO;
+  hasta: FechaISO;
+}
+
+/** Tu cartera real frente a carteras alternativas con pesos fijos, en base 100. */
+export interface CarteraComparada {
+  id: string;
+  nombre: string;
+  real?: boolean;
+  pesos: Record<string, number> | null;
+  indice: (number | null)[];
+  metricas: MetricasCartera;
+}
+
+/** «¿Y si lo hubieras metido todo en un indexado?»: tus mismas aportaciones en un ETF de referencia. */
+export interface Comparacion {
+  desde: FechaISO;
+  tuya: (number | null)[];
+  aportado: (number | null)[];
+  tuValor: number;
+  tuTir: number | null;
+  referencias: {
+    id: string;
+    nombre: string;
+    detalle: string;
+    serie: (number | null)[];
+    valor: number;
+    tir: number | null;
+    aviso: string | null;
+  }[];
+}
+
+export interface Dividendos {
+  total: number;
+  ultimos12: number;
+  /** Los últimos 12 meses sobre lo que vale hoy. */
+  rentabilidad: number | null;
+  porAno: [string, number][];
+  porProducto: { id: string; total: number; ultimos12: number; sobreValor: number | null; sobreCoste: number | null; ultimo: FechaISO; cobros: number }[];
+  ultimos: unknown[];
+}
+
+export interface Comisiones {
+  lineas: { id: string; nombre: string; ter: number; valor: number; anual: number; color: ParColores }[];
+  anual: number;
+  base: number;
+  terPonderado: number;
+  compraventaPagada: number;
 }
 
 export interface PanelDatos {
@@ -263,13 +333,13 @@ export interface PanelDatos {
   objetivo: Record<string, unknown> | null;
   objetivoReparto: RepartoObjetivo | null;
   colchon: Record<string, unknown> | null;
-  comisiones: Record<string, unknown>;
-  rentabilidadAnual: Record<string, unknown>;
-  dividendos: Record<string, unknown>;
+  comisiones: Comisiones;
+  rentabilidadAnual: RentabilidadAnual;
+  dividendos: Dividendos;
   monedas: Record<string, unknown>;
   resumenMensual: ResumenMes[];
-  comparador: Record<string, unknown>[];
-  comparacion: Record<string, unknown> | null;
+  comparador: CarteraComparada[];
+  comparacion: Comparacion | null;
   indiceCartera: number[];
   vivo: Record<string, unknown> | null;
   avisos: string[];
@@ -315,6 +385,77 @@ export interface ResultadoBusqueda {
   moneda?: string;
   /** Lo que da Morningstar de un fondo: TER en % (0,12), riesgo 1–7, categoría y gestora. */
   ficha?: { ter?: number; riesgo?: number; clase?: string; gestora?: string };
+}
+
+/** Una venta para la Renta: ganancia o pérdida por FIFO, como Hacienda (app/fiscal.py). */
+export interface VentaFiscal {
+  producto: string;
+  nombre: string;
+  isin: string | null;
+  tipo: string;
+  fecha: FechaISO;
+  unidades: number | null;
+  transmision: number;
+  adquisicion: number | null;
+  ganancia: number;
+  compras: { fecha: FechaISO; unidades: number; coste: number }[];
+  avisos: string[];
+}
+
+/** GET /api/fiscal?ano=AAAA: orientativo, para repasar el borrador de la Renta. */
+export interface InformeFiscal {
+  ok: true;
+  csv: string;
+  ano: string;
+  anos: string[];
+  ventas: VentaFiscal[];
+  rescates: VentaFiscal[];
+  cobros: { producto: string; nombre: string; clase: string; cobros: number; importe: number }[];
+  comisiones: { producto: string; nombre: string; importe: number }[];
+  gastosAlquiler: { producto: string; nombre: string; importe: number }[];
+  totales: {
+    ganancias: number; perdidas: number; saldo: number; transmision: number; adquisicion: number;
+    dividendos: number; intereses: number; alquileres: number; gastosAlquiler: number; comisiones: number; rescates: number;
+  };
+  avisos: string[];
+}
+
+/** Un traspaso de MyInvestor por contestar: ¿de qué fondo venía y cuándo? (app/importar.py) */
+export interface TraspasoMyInvestor {
+  ref: string;
+  isin: string;
+  nombre: string;
+  lotes: number;
+  coste: number;
+  unidades: number;
+  /** [fecha, importe, unidades] de cada lote que llegó por traspaso. */
+  detalle: [FechaISO, number, number][];
+  sugerencia: { origen: string; fecha: string } | null;
+  respuesta: RespuestaTraspaso | null;
+  origenes: { id: string; nombre: string }[];
+  hecho: boolean;
+  error: string | null;
+  aviso: string | null;
+}
+
+/** Respuesta a un traspaso: el fondo de origen y una fecha (AAAA-MM-DD) o «estimar». */
+export interface RespuestaTraspaso {
+  origen: string;
+  fecha: string;
+}
+
+/** La vista previa de una importación (y el informe al confirmarla). */
+export interface InformeImportacion {
+  añadidos: number;
+  repetidos: number;
+  saldos: number;
+  sustituidos: number;
+  errores: { fila: string | number; mensaje: string }[];
+  avisos: string[];
+  totales: { compras: number; ventas: number; dividendos: number; comisiones: number; numCompras: number };
+  productosNuevos: (Partial<Producto> & { precio?: number | null; monedaPrecio?: string; fechaPrecio?: FechaISO; mercado?: string })[];
+  filas: { fila: string | number; fecha: FechaISO; producto: string; productoNombre: string; tipo: string; unidades: number | null; importe: number; marcas: string[]; estado: string }[];
+  traspasosMyInvestor: TraspasoMyInvestor[];
 }
 
 export interface CopiaSeguridad {

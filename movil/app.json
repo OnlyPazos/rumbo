@@ -38,7 +38,8 @@
           "cameraPermission": "Rumbo usa la cámara solo para escanear el QR que conecta la app con tu Rumbo.",
           "recordAudioAndroid": false
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "scheme": "rumbo",
     "experiments": {

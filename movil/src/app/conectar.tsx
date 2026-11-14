@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 
 import { ClienteRumbo, ErrorRumbo, leeDireccion } from '@/api/cliente';
 import { PieCreditos } from '@/componentes/Creditos';
+import { INICIO } from '@/navegacion/rutas';
 import { useSesion } from '@/sesion/contexto';
 import { RADIO, useColores } from '@/tema';
 
@@ -50,7 +51,7 @@ export default function Conectar() {
       }
       await cliente.perfiles();   // comprueba la llave
       await conectar({ servidor, llave: llaveFinal });
-      router.replace('/');
+      router.replace(INICIO);
     } catch (e) {
       setError(e instanceof ErrorRumbo ? e.message : String(e));
     } finally {
