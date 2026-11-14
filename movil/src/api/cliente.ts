@@ -207,15 +207,15 @@ export class ClienteRumbo {
     return this.json<RespuestaCambio<unknown>>('DELETE', `/api/${coleccion}/${encodeURIComponent(id)}`);
   }
 
-  guardarObjetivo(objetivo: Partial<Objetivo>) {
+  guardarObjetivo(objetivo: { activo: boolean; importe?: NumeroOTexto; etiqueta?: string }) {
     return this.post<RespuestaCambio<Objetivo>>('/api/objetivo', objetivo);
   }
 
-  guardarColchon(colchon: Colchon | { borrar: true }) {
+  guardarColchon(colchon: { modo: 'meses'; meses: NumeroOTexto; gastoMensual: NumeroOTexto } | { modo: 'importe'; importe: NumeroOTexto } | { borrar: true }) {
     return this.post<RespuestaCambio<Colchon | null>>('/api/colchon', colchon);
   }
 
-  guardarReparto(reparto: Partial<RepartoObjetivo> & { borrar?: boolean }) {
+  guardarReparto(reparto: (Omit<Partial<RepartoObjetivo>, 'vigilar' | 'rebalancear'> & { vigilar?: NumeroOTexto; rebalancear?: NumeroOTexto }) | { borrar: true }) {
     return this.post<RespuestaCambio<RepartoObjetivo | null>>('/api/reparto', reparto);
   }
 

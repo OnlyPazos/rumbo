@@ -30,6 +30,9 @@ src/
     editar-producto.tsx   añadir o editar un producto, con el buscador
     anotar.tsx            anotar o editar compras, ventas, dividendos, comisiones, traspasos y saldos
     periodica.tsx         aportación periódica: una compra por mes con el precio de cada día
+    objetivo.tsx          mi objetivo de patrimonio (o el siguiente hito)
+    colchon.tsx           fondo de emergencia: meses de gastos o importe fijo
+    reparto-objetivo.tsx  reparto objetivo: % por tipo de activo o producto, márgenes y qué cuenta
     renta.tsx             resumen para la Renta y compartir el CSV
     importar.tsx          importar de MyInvestor, Excel/CSV o el texto de una IA
     conectar.tsx          dirección + llave del servidor (o con el QR)
@@ -44,6 +47,7 @@ src/
   compartir.ts            compartir un archivo (menú del sistema; descarga en web)
   formato.ts              números y fechas en es-ES (numEs entiende lo mismo que el backend)
   periodicas.ts           qué aportaciones periódicas toca anotar (portado de calculos.js, con sus pruebas)
+  calculos.ts             liquidez, reparto objetivo y objetivo (portado de calculos.js, con sus pruebas)
   tema.ts                 colores del panel original, claro y oscuro
 tests/                    pruebas de los cálculos (npm test, con node --test)
 ```
@@ -64,8 +68,7 @@ npx expo-doctor
 
 ## Pendiente
 
-- Lo que aún solo está en el panel web: ajustes de participaciones, objetivo, fondo de
-  emergencia y reparto objetivo, «dónde está tu dinero» (países y sectores), copias de seguridad, exportar a Excel
+- Lo que aún solo está en el panel web: ajustes de participaciones, «dónde está tu dinero» (países y sectores), copias de seguridad, exportar a Excel
   y «Compartir mi mes».
 - Builds de tienda: Rumbo va por HTTP dentro de casa / Tailscale. En Android hará falta permitir tráfico sin TLS
   (`expo-build-properties` → `android.usesCleartextTraffic`), y en iOS revisar ATS para las IP de Tailscale (100.x),
