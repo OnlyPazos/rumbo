@@ -166,3 +166,45 @@ test('objetivo: el propio si aún no lo alcanzas; si no, el siguiente hito', () 
   assert.equal(C.siguienteMeta(30000, { activo: false, importe: 40000 }, hitos)!.importe, 50000);
   assert.equal(C.siguienteMeta(60000, null, hitos), null);                  // ni objetivo ni hitos por delante
 });
+
+// Un año inventado: índice que sube 1 punto al mes, y un mes de octubre en curso.
+function datosDeMeses() {
+  const fechas: string[] = [], indice: number[] = [];
+  const dias = ["2025-12-31", "2026-01-31", "2026-02-27", "2026-03-31", "2026-04-30", "2026-05-29", "2026-06-30",
+    "2026-07-31", "2026-08-31", "2026-09-30", "2026-10-15"];
+  dias.forEach((f, i) => { fechas.push(f); indice.push(100 + i); });
+  const resumenMensual = ["2026-08", "2026-09", "2026-10"].map((mes, i) => ({
+    mes, inicio: 10000 + i * 500, fin: 10500 + i * 500, aportado: i === 2 ? 0 : 300, mercado: 200, nuevo: 0, rentabilidad: 0.02,
+  }));
+  return { fechas, indiceCartera: indice as (number | null)[], resumenMensual, fechaExtracto: "2026-10-15", total: { tir: 0.091 } };
+}
+
+test("compartir mi mes: las cifras del mes, del año y la racha", () => {
+  const D = datosDeMeses();
+  const d = C.resumenParaCompartir(D)!;                // por defecto, el último mes
+  assert.equal(d.mes, "2026-10");
+  assert.equal(d.etiqueta, "Octubre 2026");
+  assert.equal(d.enCurso, true);                       // datos al 15: el mes no ha acabado
+  assert.equal(d.rentMes, 0.02);
+  assert.ok(Math.abs(d.anoPct! - 0.10) < 1e-9);         // de 100 (31-dic) a 110
+  assert.deepEqual(d.serieAno, [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110]);
+  assert.equal(d.etqIni, "Enero");
+  assert.equal(d.racha, 2);                            // octubre aún sin aportar: cuenta ago y sep
+  assert.equal(d.tir, 0.091);
+  assert.ok(Math.abs(d.crecimiento! - 500 / 11000) < 1e-9);
+  const sep = C.resumenParaCompartir(D, 1)!;           // un mes ya cerrado
+  assert.equal(sep.enCurso, false);
+  assert.equal(sep.tir, null);                         // la TIR es de hoy, no de septiembre
+  assert.ok(Math.abs(sep.anoPct! - 0.09) < 1e-9);
+  assert.equal(C.resumenParaCompartir({ resumenMensual: [] }), null);
+});
+
+test("compartir mi mes: si empezaste este año, la curva sale desde tu primer día", () => {
+  const D = datosDeMeses();
+  D.fechas = D.fechas.slice(4);                        // empieza el 30 de abril
+  D.indiceCartera = D.indiceCartera.slice(4);
+  const d = C.resumenParaCompartir(D)!;
+  assert.equal(d.etqIni, "Abril");
+  assert.equal(d.serieAno[0], 104);
+  assert.ok(Math.abs(d.anoPct! - (110 / 104 - 1)) < 1e-9);
+});

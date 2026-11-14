@@ -36,6 +36,7 @@ src/
     renta.tsx             resumen para la Renta y compartir el CSV
     importar.tsx          importar de MyInvestor, Excel/CSV o el texto de una IA
     copias.tsx            copias de seguridad (recuperar, descargar, subir) y exportar a Excel
+    compartir-mes.tsx     «Compartir mi mes»: la imagen del mes para redes
     conectar.tsx          dirección + llave del servidor (o con el QR)
     escanear.tsx          escáner del QR (expo-camera)
     acerca.tsx            créditos al autor original
@@ -43,6 +44,7 @@ src/
     tipos.ts              tipos de la API (sacados del backend Python)
     cliente.ts            cliente de todos los endpoints (ver ../docs/API.md)
   graficos/               gráficos SVG (react-native-svg) y sus cálculos (escala.ts, sin dependencias)
+  imagen/                 la imagen de «Compartir mi mes» (portada de compartir.js, en SVG)
   sesion/                 la conexión (SecureStore / localStorage) y los datos del panel compartidos
   componentes/            piezas compartidas (créditos, selectores, formulario, iconos)
   compartir.ts            compartir un archivo o una descarga de Rumbo (menú del sistema; descarga en web)
@@ -69,7 +71,6 @@ npx expo-doctor
 
 ## Pendiente
 
-- Lo que aún solo está en el panel web: «Compartir mi mes».
 - Builds de tienda: Rumbo va por HTTP dentro de casa / Tailscale. En Android hará falta permitir tráfico sin TLS
   (`expo-build-properties` → `android.usesCleartextTraffic`), y en iOS revisar ATS para las IP de Tailscale (100.x),
   o poner Rumbo detrás de HTTPS (Tailscale Serve).

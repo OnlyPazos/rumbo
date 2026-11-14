@@ -267,3 +267,79 @@ export function siguienteMeta(
     falta: meta - valor,
   };
 }
+
+// ---------------------------------------------------------------- «Compartir mi mes» (resumenParaCompartir)
+
+const MESES_LARGOS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto',
+  'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+/** Lo mínimo del panel que hace falta para la imagen del mes. */
+export interface DatosParaCompartir {
+  resumenMensual?: { mes: string; inicio: number; fin: number; aportado: number; mercado: number; nuevo?: number; rentabilidad: number | null }[];
+  fechas?: string[];
+  indiceCartera?: (number | null)[];
+  fechaExtracto?: string;
+  total?: { tir: number | null };
+}
+
+/**
+ * Las cifras de un mes (i, posición en resumenMensual; por defecto el último) para la imagen.
+ * La rentabilidad sale del índice de la cartera, que no cuenta lo que aportas.
+ */
+export function resumenParaCompartir(D: DatosParaCompartir, i?: number | null) {
+  const rm = (D && D.resumenMensual) || [];
+  if (!rm.length) return null;
+  if (i == null || !(i >= 0 && i < rm.length)) i = rm.length - 1;
+  const r = rm[i];
+  const [ano, mes] = r.mes.split('-').map(Number);
+  const finDe = (a: number, m: number) => new Date(Date.UTC(a, m, 0)).toISOString().slice(0, 10);
+  const ultimo = i === rm.length - 1;
+  const enCurso = ultimo && String(D.fechaExtracto || '') < finDe(ano, mes);
+  const F = D.fechas || [];
+  const I = D.indiceCartera || [];
+  const indiceHasta = (lim: string) => {
+    let v: number | null = null;
+    for (let k = 0; k < F.length && F[k] <= lim; k++) if (I[k] != null) v = I[k];
+    return v;
+  };
+  let base = indiceHasta(`${ano - 1}-12-31`);
+  let desde = 1;
+  if (base == null) {   // empezaste este año: desde tu primer día
+    const k = F.findIndex((f, j) => f >= `${ano}-01-01` && I[j] != null);
+    base = k >= 0 ? I[k] : null;
+    desde = k >= 0 ? +F[k].slice(5, 7) : mes;
+  }
+  const serie: number[] = base == null ? [] : [base];
+  for (let m = desde; m <= mes; m++) {
+    const v = indiceHasta(finDe(ano, m));
+    if (v != null) serie.push(v);
+  }
+  const primero = I.find((v) => v != null) ?? null;
+  const fin = serie.length ? serie[serie.length - 1] : null;
+  let k = i;
+  let racha = 0;
+  if (enCurso && !(rm[k].aportado > 0)) k--;   // el mes en curso aún puede llegar
+  while (k >= 0 && rm[k].aportado > 0) {
+    racha++;
+    k--;
+  }
+  const nuevo = r.nuevo || 0;
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  return {
+    mes: r.mes, ano, nombreMes: MESES_LARGOS[mes - 1], etiqueta: `${cap(MESES_LARGOS[mes - 1])} ${ano}`,
+    enCurso, ultimo,
+    rentMes: r.rentabilidad,
+    anoPct: base && fin ? fin / base - 1 : null,
+    desdeInicio: primero && fin ? fin / primero - 1 : null,
+    serieAno: serie, etqIni: cap(MESES_LARGOS[desde - 1]), etqFin: cap(MESES_LARGOS[mes - 1]),
+    racha,
+    tir: ultimo && D.total ? D.total.tir : null,
+    patrimonio: r.fin, cambioEur: r.fin - r.inicio - nuevo,
+    aportadoEur: r.aportado, mercadoEur: r.mercado,
+    crecimiento: r.inicio > 0 ? (r.fin - r.inicio - nuevo) / r.inicio : null,
+    porAportado: r.inicio > 0 ? r.aportado / r.inicio : null,
+    porMercado: r.inicio > 0 ? r.mercado / r.inicio : null,
+  };
+}
+
+export type ResumenCompartir = NonNullable<ReturnType<typeof resumenParaCompartir>>;
