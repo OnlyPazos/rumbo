@@ -5,7 +5,9 @@
  */
 import { Link, Redirect, Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+// ScrollView y RefreshControl de gesture-handler: coordinan en nativo el scroll con los gráficos que se arrastran.
+import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
 
 import { ErrorRumbo } from '@/api/cliente';
 import type { PanelDatos, ProductoCalculado, RespuestaPanel } from '@/api/tipos';

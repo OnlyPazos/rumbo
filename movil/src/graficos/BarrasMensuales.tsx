@@ -4,6 +4,7 @@
  */
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { GestureDetector } from 'react-native-gesture-handler';
 import Svg, { Line, Rect, Text as SvgText } from 'react-native-svg';
 
 import { fmtEuros } from '@/formato';
@@ -25,7 +26,7 @@ export function BarrasMensuales({ meses, series, c, alto = 200 }: { meses: strin
   const iw = Math.max(ancho - P.l - P.r, 1);
   const ih = alto - P.t - P.b;
   const hueco = iw / Math.max(n, 1);
-  const { indice, manejadores } = useTactil((px) => (n ? Math.min(n - 1, Math.max(0, Math.floor((px - P.l) / hueco))) : null));
+  const { indice, gesto } = useTactil((px) => (n ? Math.min(n - 1, Math.max(0, Math.floor((px - P.l) / hueco))) : null));
 
   // Las retiradas (negativas) no se apilan: la barra enseña lo que entró ese mes.
   const totales = meses.map((_, i) => series.reduce((s, x) => s + Math.max(0, x.valores[i] || 0), 0));
@@ -37,7 +38,8 @@ export function BarrasMensuales({ meses, series, c, alto = 200 }: { meses: strin
   const anchoBarra = Math.max(1, Math.min(28, hueco * 0.7));
 
   return (
-    <View onLayout={(ev) => setAncho(ev.nativeEvent.layout.width)} {...manejadores}>
+    <GestureDetector gesture={gesto}>
+    <View onLayout={(ev) => setAncho(ev.nativeEvent.layout.width)}>
       {ancho > 0 && (
         <Svg width={ancho} height={alto}>
           {lineasRejilla(e).map((g) => (
@@ -87,6 +89,7 @@ export function BarrasMensuales({ meses, series, c, alto = 200 }: { meses: strin
         </View>
       )}
     </View>
+    </GestureDetector>
   );
 }
 

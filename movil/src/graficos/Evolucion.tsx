@@ -4,6 +4,7 @@
  */
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { GestureDetector } from 'react-native-gesture-handler';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 
 import { fmtEuros, fmtFecha, fmtPct } from '@/formato';
@@ -27,7 +28,7 @@ export function Evolucion({
   const n = fechas.length;
   const iw = Math.max(ancho - P.l - P.r, 1);
   const ih = alto - P.t - P.b;
-  const { indice, manejadores } = useTactil((px) => (n ? indiceEn(px, P.l, iw, n) : null));
+  const { indice, gesto } = useTactil((px) => (n ? indiceEn(px, P.l, iw, n) : null));
 
   const validos = [...valores, ...(aportado ?? [])].filter((v): v is number => v != null);
   if (!n || !validos.length) {
@@ -48,7 +49,8 @@ export function Evolucion({
   const a = indice != null ? aportado?.[indice] : null;
 
   return (
-    <View onLayout={(ev) => setAncho(ev.nativeEvent.layout.width)} {...manejadores}>
+    <GestureDetector gesture={gesto}>
+    <View onLayout={(ev) => setAncho(ev.nativeEvent.layout.width)}>
       {ancho > 0 && (
         <Svg width={ancho} height={alto}>
           {lineasRejilla(e).map((g) => (
@@ -111,6 +113,7 @@ export function Evolucion({
         )}
       </View>
     </View>
+    </GestureDetector>
   );
 }
 
