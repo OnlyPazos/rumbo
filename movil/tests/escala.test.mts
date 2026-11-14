@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
-  arcoDonut, desdeIdx, escalaBonita, etiquetaEjeX, fmtEurCorto, indiceEn, indicesEjeX, lineasRejilla, trazado,
+  aPorcentajes, acumula, arcoDonut, desdeIdx, escalaBonita, etiquetaEjeX, fmtEurCorto, indiceEn, indicesEjeX, lineasRejilla,
+  trazado, tuDineroYMercado,
 } from '../src/graficos/escala.ts';
 
 test('escala bonita: cifras redondas que cubren el máximo', () => {
@@ -58,4 +59,22 @@ test('punto bajo el dedo', () => {
   assert.equal(indiceEn(362, 62, 300, 100), 99);
   assert.equal(indiceEn(1000, 62, 300, 100), 99);   // fuera por la derecha
   assert.equal(indiceEn(0, 62, 300, 100), 0);
+});
+
+test('apilado: cada serie sobre las anteriores', () => {
+  assert.deepEqual(acumula([[1, 2, null], [10, null, 30]], 3), [[1, 2, 0], [11, 2, 30]]);
+  assert.deepEqual(acumula([], 3), []);
+});
+
+test('tu dinero y el mercado', () => {
+  const r = tuDineroYMercado([100, 120, 90], [100, 100, 100]);
+  assert.deepEqual(r.tuyo, [100, 100, 90]);
+  assert.deepEqual(r.mercado, [0, 20, 0]);
+  assert.equal(r.bajoCoste, true);
+  assert.equal(tuDineroYMercado([100, 120], [100, 100]).bajoCoste, false);
+});
+
+test('reparto en %: suma 100 cada día (o 0 si no hay nada)', () => {
+  const p = aPorcentajes([[1, 0, 3], [3, 0, 1]], 3);
+  assert.deepEqual(p, [[25, 0, 75], [75, 0, 25]]);
 });

@@ -17,11 +17,18 @@ import { Segmentos } from '@/componentes/Segmentos';
 import { fmtEuros, fmtFecha, fmtPct } from '@/formato';
 import { BarrasMensuales } from '@/graficos/BarrasMensuales';
 import { Donut, type DatoDonut } from '@/graficos/Donut';
-import { RANGOS, desdeIdx, type Rango } from '@/graficos/escala';
+import { AreaApilada } from '@/graficos/AreaApilada';
+import { RANGOS, aPorcentajes, desdeIdx, tuDineroYMercado, type Rango } from '@/graficos/escala';
 import { Evolucion } from '@/graficos/Evolucion';
 import { Mini } from '@/graficos/Mini';
 import { useSesion } from '@/sesion/contexto';
 import { RADIO, colorDe, colorSigno, useColores, type Colores } from '@/tema';
+
+type Vista = 'apilado' | 'total' | 'dinero' | 'reparto';
+const VISTAS: { id: Vista; et: string }[] = [
+  { id: 'apilado', et: 'Productos' }, { id: 'total', et: 'Total' },
+  { id: 'dinero', et: 'Tu dinero' }, { id: 'reparto', et: 'Reparto %' },
+];
 
 type Reparto = 'clase' | 'producto' | 'entidad' | 'tipo';
 const REPARTOS: { id: Reparto; et: string }[] = [
@@ -37,6 +44,7 @@ export default function Panel() {
   const [recargando, setRecargando] = useState(false);
   const [rango, setRango] = useState<Rango>('todo');
   const [reparto, setReparto] = useState<Reparto>('clase');
+  const [vista, setVista] = useState<Vista>('apilado');   // la de la web por defecto
 
   const cargar = useCallback(async () => {
     if (!cliente) return;
@@ -173,10 +181,9 @@ export default function Panel() {
 
             <Tarjeta c={c}>
               <Text style={[estilos.titulo, { color: c.tinta }]}>Evolución</Text>
-              <Evolucion
-                c={c} color={c.acento}
-                fechas={corta(datos.fechas)} valores={corta(datos.total.serie)} aportado={corta(datos.total.serieAportado)}
-              />
+              <Segmentos opciones={VISTAS} activo={vista} alCambiar={setVista} />
+              <View style={{ height: 8 }} />
+              <GraficoEvolucion vista={vista} datos={datos} productos={productos} corta={corta} c={c} />
             </Tarjeta>
 
             <Tarjeta c={c}>
@@ -210,6 +217,65 @@ export default function Panel() {
         )}
         <PieCreditos />
       </ScrollView>
+    </>
+  );
+}
+
+/** La gráfica de evolución en cada una de sus vistas (pintaPrincipal en app/web/app.js). */
+function GraficoEvolucion({
+  vista, datos, productos, corta, c,
+}: {
+  vista: Vista;
+  datos: PanelDatos;
+  productos: ProductoCalculado[];
+  corta: <T>(arr: T[] | undefined) => T[];
+  c: Colores;
+}) {
+  const fechas = corta(datos.fechas);
+  const serie = corta(datos.total.serie);
+  const aportado = corta(datos.total.serieAportado);
+  const conSerie = productos.filter((p) => p.serie.some((v) => v));
+  const nota = (texto: string) => <Text style={[estilos.pequeno, { color: c.tinta3, marginTop: 4 }]}>{texto}</Text>;
+
+  if (vista === 'total') {
+    return <Evolucion key="total" c={c} color={c.acento} fechas={fechas} valores={serie} aportado={aportado} />;
+  }
+  if (vista === 'dinero') {
+    const { tuyo, mercado, bajoCoste } = tuDineroYMercado(serie, aportado);
+    return (
+      <>
+        <AreaApilada key="dinero" c={c} fechas={fechas} series={[
+          { nombre: 'Lo que pusiste tú', color: c.tinta3, valores: tuyo },
+          { nombre: 'Lo que puso el mercado', color: c.bien, valores: mercado },
+        ]} />
+        {nota(bajoCoste
+          ? 'Hubo días por debajo de lo aportado: ahí la banda verde desaparece.'
+          : 'La banda verde es rentabilidad, no dinero tuyo.')}
+      </>
+    );
+  }
+  if (vista === 'reparto') {
+    const pct = aPorcentajes(conSerie.map((p) => corta(p.serie)), fechas.length);
+    return (
+      <AreaApilada
+        key="reparto" c={c} fechas={fechas} maximo={100}
+        series={conSerie.map((p, k) => ({ nombre: p.corto || p.nombre, color: colorDe(p.slotColor, c), valores: pct[k] }))}
+        formatoEje={(v) => `${Math.round(v)} %`}
+        formato={(v) => `${v.toLocaleString('es-ES', { maximumFractionDigits: 1 })} %`}
+      />
+    );
+  }
+  // Por producto: el apilado de lo que vale cada uno, con lo aportado encima.
+  const tardios = conSerie.filter((p) => p.desde && p.desde > datos.fechas[0] && p.aportado == null);
+  return (
+    <>
+      <AreaApilada
+        key="apilado" c={c} fechas={fechas} aportado={aportado}
+        series={conSerie.map((p) => ({ nombre: p.corto || p.nombre, color: colorDe(p.slotColor, c), valores: corta(p.serie) }))}
+      />
+      {tardios.length > 0 && nota(
+        `${tardios.map((p) => p.corto || p.nombre).join(', ')} ${tardios.length > 1 ? 'entran' : 'entra'} en el seguimiento el ${fmtFecha(tardios[0].desde)}.`,
+      )}
     </>
   );
 }

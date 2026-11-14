@@ -119,3 +119,32 @@ export function indiceEn(px: number, izquierda: number, ancho: number, n: number
   const i = Math.round(((px - izquierda) / ancho) * (n - 1));
   return Math.min(n - 1, Math.max(0, i));
 }
+
+// ---------------------------------------------------------------- áreas apiladas (areaApilada en graficos.js)
+
+/** Sumas acumuladas de cada serie sobre las anteriores (null cuenta como 0). La última es el total. */
+export function acumula(series: (number | null | undefined)[][], n: number) {
+  const out: number[][] = [];
+  series.forEach((valores, s) => {
+    const previo = s === 0 ? new Array<number>(n).fill(0) : out[s - 1];
+    out.push(previo.map((p, i) => p + (valores[i] || 0)));
+  });
+  return out;
+}
+
+/**
+ * «Tu dinero vs mercado» (vista «dinero» en app.js): lo que pusiste tú (hasta lo que vale) y lo que
+ * ha puesto el mercado encima. `bajoCoste` avisa de días en que valía menos de lo aportado.
+ */
+export function tuDineroYMercado(serie: number[], aportado: number[]) {
+  const tuyo = serie.map((v, i) => Math.min(aportado[i] ?? 0, v));
+  const mercado = serie.map((v, i) => Math.max(0, v - (aportado[i] ?? 0)));
+  const bajoCoste = serie.some((v, i) => v > 0 && v < (aportado[i] ?? 0) - 0.01);
+  return { tuyo, mercado, bajoCoste };
+}
+
+/** Cada serie como % del total de ese día (vista «Reparto %»). */
+export function aPorcentajes(series: (number | null | undefined)[][], n: number) {
+  const total = Array.from({ length: n }, (_, i) => series.reduce((s, v) => s + (v[i] || 0), 0));
+  return series.map((v) => total.map((t, i) => (t ? ((v[i] || 0) / t) * 100 : 0)));
+}
