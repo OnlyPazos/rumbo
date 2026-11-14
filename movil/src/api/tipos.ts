@@ -35,11 +35,11 @@ export interface RespuestaError {
 
 // ---------------------------------------------------------------- cartera (lo que se guarda: cartera.json)
 
-export interface Producto {
+/** Lo común a un producto de la cartera y a uno ya calculado. */
+interface ProductoBase {
   id: string;
   nombre: string;
   corto?: string;
-  tipo: TipoProducto;
   fuente: Fuente;
   codigo?: string;
   moneda?: string;
@@ -63,6 +63,11 @@ export interface Producto {
   /** Solo en «Todos juntos»: nombre del perfil al que pertenece. */
   perfil?: string;
   [extra: string]: unknown;
+}
+
+/** Un producto tal como se guarda en la cartera (cartera.json). */
+export interface Producto extends ProductoBase {
+  tipo: TipoProducto;
 }
 
 export interface Movimiento {
@@ -162,8 +167,13 @@ export interface AportacionCalculada {
   nivel: number;
 }
 
-export interface ProductoCalculado extends Producto {
-  tipoClave: string;
+/**
+ * Un producto ya calculado por el motor. Ojo: aquí `tipo` es el nombre para enseñar
+ * («Fondo indexado») y la clave («fondo») va en `tipoClave`; en la cartera es al revés.
+ */
+export interface ProductoCalculado extends ProductoBase {
+  tipo: string;
+  tipoClave: TipoProducto;
   fuentePrecio: string;
   fuenteTexto: string;
   etqPrecio: string;
