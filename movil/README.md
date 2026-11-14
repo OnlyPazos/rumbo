@@ -19,23 +19,31 @@ dirección con la llave (`http://IP:8765/?acceso=…`) o escribirlas por separad
 
 ```
 src/
-  app/                 rutas (Expo Router)
-    _layout.tsx        pila de navegación, tema y GestureHandlerRootView
-    index.tsx          panel: cifras, evolución (4 vistas), reparto, aportaciones y productos
-    producto/[id].tsx  ficha de un producto: cifras, evolución o precio, datos y movimientos
-    anotar.tsx         anotar o editar compras, ventas, dividendos, comisiones, traspasos y saldos
-    conectar.tsx       dirección + llave del servidor (o con el QR)
-    escanear.tsx       escáner del QR (expo-camera)
-    acerca.tsx         créditos al autor original
+  app/                    rutas (Expo Router)
+    _layout.tsx           pila de navegación, tema, sesión y datos del panel
+    (tabs)/               las pestañas
+      index.tsx           Panel: cifras, evolución (4 vistas), reparto, aportaciones y productos
+      mes.tsx             El mes: cambio del mes, tú frente al mercado, producto a producto
+      rendimiento.tsx     Rendimiento: frente a un indexado, por año, otras carteras, dividendos, comisiones
+      mas.tsx             Más: perfiles, Renta, importar, conexión, versión y créditos
+    producto/[id].tsx     ficha de un producto: cifras, evolución o precio, datos y movimientos
+    editar-producto.tsx   añadir o editar un producto, con el buscador
+    anotar.tsx            anotar o editar compras, ventas, dividendos, comisiones, traspasos y saldos
+    renta.tsx             resumen para la Renta y compartir el CSV
+    importar.tsx          importar de MyInvestor, Excel/CSV o el texto de una IA
+    conectar.tsx          dirección + llave del servidor (o con el QR)
+    escanear.tsx          escáner del QR (expo-camera)
+    acerca.tsx            créditos al autor original
   api/
-    tipos.ts           tipos de la API (sacados del backend Python)
-    cliente.ts         cliente de todos los endpoints (ver ../docs/API.md)
-  graficos/            gráficos SVG (react-native-svg) y sus cálculos (escala.ts, sin dependencias)
-  sesion/              dónde se guarda la conexión (SecureStore / localStorage) y su contexto
-  componentes/         piezas compartidas (créditos, selectores, formulario)
-  formato.ts           números y fechas en es-ES (numEs entiende lo mismo que el backend)
-  tema.ts              colores del panel original, claro y oscuro
-tests/                 pruebas de los cálculos (npm test, con node --test)
+    tipos.ts              tipos de la API (sacados del backend Python)
+    cliente.ts            cliente de todos los endpoints (ver ../docs/API.md)
+  graficos/               gráficos SVG (react-native-svg) y sus cálculos (escala.ts, sin dependencias)
+  sesion/                 la conexión (SecureStore / localStorage) y los datos del panel compartidos
+  componentes/            piezas compartidas (créditos, selectores, formulario, iconos)
+  compartir.ts            compartir un archivo (menú del sistema; descarga en web)
+  formato.ts              números y fechas en es-ES (numEs entiende lo mismo que el backend)
+  tema.ts                 colores del panel original, claro y oscuro
+tests/                    pruebas de los cálculos (npm test, con node --test)
 ```
 
 ## Comprobaciones
@@ -54,10 +62,9 @@ npx expo-doctor
 
 ## Pendiente
 
-- Pestañas «El mes» y «Rendimiento» del panel web (resumen mensual, rentabilidad por año, comparación con un
-  indexado, dividendos, comisiones).
-- Crear y editar productos (con el buscador), ajustes de participaciones, aportaciones periódicas, perfiles,
-  importar, Renta y copias de seguridad.
+- Lo que aún solo está en el panel web: aportaciones periódicas, ajustes de participaciones, objetivo, fondo de
+  emergencia y reparto objetivo, «dónde está tu dinero» (países y sectores), copias de seguridad, exportar a Excel
+  y «Compartir mi mes».
 - Builds de tienda: Rumbo va por HTTP dentro de casa / Tailscale. En Android hará falta permitir tráfico sin TLS
   (`expo-build-properties` → `android.usesCleartextTraffic`), y en iOS revisar ATS para las IP de Tailscale (100.x),
   o poner Rumbo detrás de HTTPS (Tailscale Serve).

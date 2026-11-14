@@ -3,14 +3,14 @@
  * Cifras clave, evolución, reparto, aportaciones de cada mes y la lista de productos.
  * El periodo elegido (1M … Todo) vale para la evolución, las aportaciones y las mini gráficas.
  */
-import { Link, Redirect, router, Stack, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { Link, router, Tabs } from 'expo-router';
+import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 // ScrollView y RefreshControl de gesture-handler: coordinan en nativo el scroll con los gráficos que se arrastran.
 import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
 
 import { ErrorRumbo } from '@/api/cliente';
-import type { PanelDatos, ProductoCalculado, RespuestaPanel } from '@/api/tipos';
+import type { PanelDatos, ProductoCalculado } from '@/api/tipos';
 import { PieCreditos } from '@/componentes/Creditos';
 import { confirmar } from '@/componentes/Formulario';
 import { Segmentos } from '@/componentes/Segmentos';
@@ -22,6 +22,7 @@ import { RANGOS, aPorcentajes, desdeIdx, tuDineroYMercado, type Rango } from '@/
 import { Evolucion } from '@/graficos/Evolucion';
 import { Mini } from '@/graficos/Mini';
 import { useSesion } from '@/sesion/contexto';
+import { usePanelAlEnfocar } from '@/sesion/panel';
 import { RADIO, colorDe, colorSigno, useColores, type Colores } from '@/tema';
 
 type Vista = 'apilado' | 'total' | 'dinero' | 'reparto';
@@ -38,39 +39,15 @@ const REPARTOS: { id: Reparto; et: string }[] = [
 
 export default function Panel() {
   const c = useColores();
-  const { cargando, cliente } = useSesion();
-  const [panel, setPanel] = useState<RespuestaPanel | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { cliente } = useSesion();
+  // Los datos los comparten las pestañas; se recargan al volver aquí (por ejemplo, después de anotar algo).
+  const { panel, error: errorCarga, cargar } = usePanelAlEnfocar();
+  const [errorAccion, setError] = useState<string | null>(null);
+  const error = errorAccion ?? errorCarga;
   const [recargando, setRecargando] = useState(false);
   const [rango, setRango] = useState<Rango>('todo');
   const [reparto, setReparto] = useState<Reparto>('clase');
   const [vista, setVista] = useState<Vista>('apilado');   // la de la web por defecto
-
-  const cargar = useCallback(async () => {
-    if (!cliente) return;
-    try {
-      const r = await cliente.cargarPanel();
-      setError(null);
-      setPanel(r);
-    } catch (e) {
-      setError(e instanceof ErrorRumbo ? e.message : String(e));
-    }
-  }, [cliente]);
-
-  // Carga al entrar y cada vez que se vuelve al panel (por ejemplo, después de anotar algo).
-  useFocusEffect(
-    useCallback(() => {
-      if (!cliente) return;
-      let vigente = true;
-      cliente.cargarPanel().then(
-        (r) => vigente && (setError(null), setPanel(r)),
-        (e) => vigente && setError(e instanceof ErrorRumbo ? e.message : String(e)),
-      );
-      return () => {
-        vigente = false;
-      };
-    }, [cliente]),
-  );
 
   /** Sale de la cartera de ejemplo: crea la tuya, vacía o como copia del ejemplo para practicar. */
   async function empezar(desde: 'vacia' | 'ejemplo') {
@@ -83,6 +60,7 @@ export default function Panel() {
     if (!ok) return;
     try {
       await cliente.empezar(desde);
+      setError(null);
       await cargar();
     } catch (e) {
       setError(e instanceof ErrorRumbo ? e.message : String(e));
@@ -94,6 +72,7 @@ export default function Panel() {
     setRecargando(true);
     try {
       await cliente.actualizarPrecios();
+      setError(null);
       await cargar();
     } catch (e) {
       setError(e instanceof ErrorRumbo ? e.message : String(e));
@@ -102,9 +81,6 @@ export default function Panel() {
     }
   }
 
-  if (cargando) return <Centro><ActivityIndicator /></Centro>;
-  if (!cliente) return <Redirect href="/conectar" />;
-
   const datos = panel?.datos;
   const productos = datos ? [...datos.productos, ...datos.otrosActivos].sort((a, b) => b.valor - a.valor) : [];
   const i0 = datos ? desdeIdx(datos.fechas, datos.fechaExtracto, rango) : 0;
@@ -112,7 +88,7 @@ export default function Panel() {
 
   return (
     <>
-      <Stack.Screen
+      <Tabs.Screen
         options={{
           title: datos?.titular ?? 'Rumbo',
           headerRight: () => (
@@ -132,7 +108,7 @@ export default function Panel() {
         {error && (
           <Tarjeta c={c}>
             <Text style={{ color: c.mal }}>{error}</Text>
-            <Pressable onPress={cargar}><Text style={{ color: c.acento, marginTop: 8 }}>Reintentar</Text></Pressable>
+            <Pressable onPress={() => { setError(null); cargar(); }}><Text style={{ color: c.acento, marginTop: 8 }}>Reintentar</Text></Pressable>
           </Tarjeta>
         )}
 
@@ -140,9 +116,9 @@ export default function Panel() {
 
         {panel && !datos && (
           <Tarjeta c={c}>
+            <Link href="/editar-producto" style={{ color: c.acento, fontWeight: '700', marginBottom: 6 }}>+ Añadir un producto</Link>
             <Text style={{ color: c.tinta2 }}>
-              Tu cartera está vacía. Crea tus productos desde el panel web de Rumbo (en el ordenador) y anota aquí
-              sus compras y saldos con «+ Anotar».
+              Tu cartera está vacía. Empieza añadiendo tus productos y luego anota sus compras y saldos con «+ Anotar».
             </Text>
           </Tarjeta>
         )}
@@ -198,7 +174,12 @@ export default function Panel() {
               <Aportaciones datos={datos} productos={productos} desde={datos.fechas[i0]} c={c} />
             </Tarjeta>
 
-            <Text style={[estilos.seccion, { color: c.tinta }]}>Productos</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+              <Text style={[estilos.seccion, { color: c.tinta }]}>Productos</Text>
+              {datos.modo === 'propio' && (
+                <Link href="/editar-producto" style={{ color: c.acento, fontWeight: '700' }}>+ Nuevo</Link>
+              )}
+            </View>
             {productos.map((p) => <FilaProducto key={p.id} p={p} serie={corta(p.serie)} c={c} />)}
 
             {datos.avisos.length > 0 && (
@@ -342,10 +323,6 @@ function Dato({ c, titulo, valor, color }: { c: Colores; titulo: string; valor: 
       <Text style={{ color, fontWeight: '700', fontSize: 16 }}>{valor}</Text>
     </View>
   );
-}
-
-function Centro({ children }: { children: React.ReactNode }) {
-  return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>{children}</View>;
 }
 
 const estilos = StyleSheet.create({
