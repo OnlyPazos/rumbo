@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Rumbo",
+    "slug": "rumbo-movil",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/rumbo-icono.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rumbo.movil",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.rumbo.movil"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Rumbo usa la cámara solo para escanear el QR que conecta la app con tu Rumbo.",
+          "recordAudioAndroid": false
+        }
+      ]
+    ],
+    "scheme": "rumbo",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
