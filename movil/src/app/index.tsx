@@ -1,18 +1,30 @@
 /**
- * Panel (primera versión): patrimonio, ganancia, rentabilidad y la lista de productos.
- * Es el «hola mundo» de punta a punta con el backend; las gráficas y el resto de pantallas
- * del panel original llegan en los siguientes pasos.
+ * Panel: la pestaña «Patrimonio» del panel original de Rumbo (app/web/app.js), en el móvil.
+ * Cifras clave, evolución, reparto, aportaciones de cada mes y la lista de productos.
+ * El periodo elegido (1M … Todo) vale para la evolución, las aportaciones y las mini gráficas.
  */
 import { Link, Redirect, Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ErrorRumbo } from '@/api/cliente';
-import type { ProductoCalculado, RespuestaPanel } from '@/api/tipos';
+import type { PanelDatos, ProductoCalculado, RespuestaPanel } from '@/api/tipos';
 import { PieCreditos } from '@/componentes/Creditos';
+import { Segmentos } from '@/componentes/Segmentos';
 import { fmtEuros, fmtFecha, fmtPct } from '@/formato';
+import { BarrasMensuales } from '@/graficos/BarrasMensuales';
+import { Donut, type DatoDonut } from '@/graficos/Donut';
+import { RANGOS, desdeIdx, type Rango } from '@/graficos/escala';
+import { Evolucion } from '@/graficos/Evolucion';
+import { Mini } from '@/graficos/Mini';
 import { useSesion } from '@/sesion/contexto';
 import { RADIO, colorDe, colorSigno, useColores, type Colores } from '@/tema';
+
+type Reparto = 'clase' | 'producto' | 'entidad' | 'tipo';
+const REPARTOS: { id: Reparto; et: string }[] = [
+  { id: 'clase', et: 'Activo' }, { id: 'producto', et: 'Producto' },
+  { id: 'entidad', et: 'Entidad' }, { id: 'tipo', et: 'Tipo' },
+];
 
 export default function Panel() {
   const c = useColores();
@@ -20,6 +32,8 @@ export default function Panel() {
   const [panel, setPanel] = useState<RespuestaPanel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [recargando, setRecargando] = useState(false);
+  const [rango, setRango] = useState<Rango>('todo');
+  const [reparto, setReparto] = useState<Reparto>('clase');
 
   const cargar = useCallback(async () => {
     if (!cliente) return;
@@ -63,6 +77,8 @@ export default function Panel() {
 
   const datos = panel?.datos;
   const productos = datos ? [...datos.productos, ...datos.otrosActivos].sort((a, b) => b.valor - a.valor) : [];
+  const i0 = datos ? desdeIdx(datos.fechas, datos.fechaExtracto, rango) : 0;
+  const corta = <T,>(arr: T[] | undefined) => (arr ?? []).slice(i0);
 
   return (
     <>
@@ -112,8 +128,30 @@ export default function Panel() {
               </Text>
             </Tarjeta>
 
+            <Segmentos opciones={RANGOS} activo={rango} alCambiar={setRango} />
+
+            <Tarjeta c={c}>
+              <Text style={[estilos.titulo, { color: c.tinta }]}>Evolución</Text>
+              <Evolucion
+                c={c} color={c.acento}
+                fechas={corta(datos.fechas)} valores={corta(datos.total.serie)} aportado={corta(datos.total.serieAportado)}
+              />
+            </Tarjeta>
+
+            <Tarjeta c={c}>
+              <Text style={[estilos.titulo, { color: c.tinta }]}>Reparto</Text>
+              <Segmentos opciones={REPARTOS} activo={reparto} alCambiar={setReparto} />
+              <View style={{ height: 10 }} />
+              <Donut key={reparto} c={c} datos={datosReparto(datos, productos, reparto, c)} />
+            </Tarjeta>
+
+            <Tarjeta c={c}>
+              <Text style={[estilos.titulo, { color: c.tinta }]}>Aportaciones de cada mes</Text>
+              <Aportaciones datos={datos} productos={productos} desde={datos.fechas[i0]} c={c} />
+            </Tarjeta>
+
             <Text style={[estilos.seccion, { color: c.tinta }]}>Productos</Text>
-            {productos.map((p) => <FilaProducto key={p.id} p={p} c={c} />)}
+            {productos.map((p) => <FilaProducto key={p.id} p={p} serie={corta(p.serie)} c={c} />)}
 
             {datos.avisos.length > 0 && (
               <Tarjeta c={c}>
@@ -135,15 +173,47 @@ export default function Panel() {
   );
 }
 
-function FilaProducto({ p, c }: { p: ProductoCalculado; c: Colores }) {
+/** Los grupos del donut: los que ya calcula el motor (por clase, entidad y tipo) o producto a producto. */
+function datosReparto(datos: PanelDatos, productos: ProductoCalculado[], reparto: Reparto, c: Colores): DatoDonut[] {
+  if (reparto === 'producto') {
+    return productos.filter((p) => p.valor > 0).map((p) => ({ nombre: p.corto || p.nombre, valor: p.valor, color: colorDe(p.slotColor, c) }));
+  }
+  const grupos = reparto === 'clase' ? datos.total.porClase : reparto === 'entidad' ? datos.total.porEntidad : datos.total.porTipo;
+  return grupos.map((g) => ({ nombre: g.nombre, valor: g.valor, color: colorDe(g.color, c) }));
+}
+
+function Aportaciones({ datos, productos, desde, c }: { datos: PanelDatos; productos: ProductoCalculado[]; desde: string; c: Colores }) {
+  const am = datos.aportacionesMensuales;
+  const idx = am.meses.findIndex((m) => m >= desde.slice(0, 7));
+  const j0 = idx < 0 ? am.meses.length : idx;
+  const series = productos
+    .filter((p) => (am.porProducto[p.id] ?? []).some((v) => v))
+    .map((p) => ({ nombre: p.corto || p.nombre, color: colorDe(p.slotColor, c), valores: am.porProducto[p.id].slice(j0) }));
+  const meses = am.meses.slice(j0);
+  const suma = series.reduce((s, x) => s + x.valores.reduce((a, v) => a + Math.max(0, v || 0), 0), 0);
+  return (
+    <>
+      <BarrasMensuales meses={meses} series={series} c={c} />
+      {meses.length > 0 && (
+        <Text style={[estilos.pequeno, { color: c.tinta3, marginTop: 4 }]}>
+          {fmtEuros(suma)} en {meses.length} {meses.length === 1 ? 'mes' : 'meses'}
+        </Text>
+      )}
+    </>
+  );
+}
+
+function FilaProducto({ p, serie, c }: { p: ProductoCalculado; serie: (number | null)[]; c: Colores }) {
+  const color = colorDe(p.slotColor, c);
   return (
     <View style={[estilos.producto, { backgroundColor: c.sup, borderColor: c.borde }]}>
-      <View style={[estilos.punto, { backgroundColor: colorDe(p.slotColor, c) }]} />
+      <View style={[estilos.punto, { backgroundColor: color }]} />
       <View style={{ flex: 1 }}>
         <Text style={{ color: c.tinta, fontWeight: '600' }} numberOfLines={1}>{p.corto || p.nombre}</Text>
-        <Text style={[estilos.pequeno, { color: c.tinta3 }]}>{fmtPct(p.peso)} del total</Text>
+        <Text style={[estilos.pequeno, { color: c.tinta3 }]}>{fmtPct(p.peso).replace('+', '')} del total</Text>
       </View>
-      <View style={{ alignItems: 'flex-end' }}>
+      <Mini valores={serie} color={color} />
+      <View style={{ alignItems: 'flex-end', minWidth: 86 }}>
         <Text style={{ color: c.tinta, fontWeight: '600' }}>{fmtEuros(p.valor)}</Text>
         <Text style={[estilos.pequeno, { color: colorSigno(p.rentabilidad, c) }]}>{fmtPct(p.rentabilidad)}</Text>
       </View>
@@ -170,8 +240,9 @@ function Centro({ children }: { children: React.ReactNode }) {
 
 const estilos = StyleSheet.create({
   pagina: { padding: 16, gap: 10, maxWidth: 720, width: '100%', alignSelf: 'center' },
-  tarjeta: { borderRadius: RADIO, borderWidth: 1, padding: 18, gap: 6 },
+  tarjeta: { borderRadius: RADIO, borderWidth: 1, padding: 16, gap: 6 },
   etiqueta: { fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  titulo: { fontSize: 16, fontWeight: '700', marginBottom: 6 },
   cifra: { fontSize: 36, fontWeight: '800', letterSpacing: -1 },
   fila: { flexDirection: 'row', gap: 12, marginVertical: 8 },
   pequeno: { fontSize: 12 },
