@@ -1,3 +1,8 @@
+> [!NOTE]
+> **Esto es un fork de [Rumbo](https://github.com/danidm98/rumbo), creado por [Dani Dominguez Quant](https://www.youtube.com/channel/UCiS3qumDoE7QDwzo_ChU6yQ?sub_confirmation=1).**
+> Todo el mérito de la herramienta es suyo. Este fork añade una app de Expo (iOS, Android y web) en [`movil/`](movil/)
+> que usa su backend: ver [FORK.md](FORK.md). Lo que sigue es el README original del autor.
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/logo/rumbo-oscuro.png">
