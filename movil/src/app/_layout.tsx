@@ -30,8 +30,13 @@ export default function Raiz() {
             <Stack.Screen name="anotar" options={{ title: 'Anotar' }} />
             <Stack.Screen name="producto/[id]" options={{ title: 'Producto' }} />
             <Stack.Screen name="editar-producto" options={{ title: 'Producto' }} />
+            <Stack.Screen name="periodica" options={{ title: 'Aportación periódica' }} />
+            <Stack.Screen name="objetivo" options={{ title: 'Mi objetivo' }} />
+            <Stack.Screen name="colchon" options={{ title: 'Fondo de emergencia' }} />
+            <Stack.Screen name="reparto-objetivo" options={{ title: 'Reparto objetivo' }} />
             <Stack.Screen name="renta" options={{ title: 'Para la Renta' }} />
             <Stack.Screen name="importar" options={{ title: 'Importar' }} />
+            <Stack.Screen name="copias" options={{ title: 'Copias y Excel' }} />
             <Stack.Screen name="acerca" options={{ title: 'Acerca de' }} />
           </Stack>
         </PanelDeEsteServidor>

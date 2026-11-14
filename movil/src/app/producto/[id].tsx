@@ -11,6 +11,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { ErrorRumbo } from '@/api/cliente';
 import type { Cartera, Modo, Movimiento, PanelDatos, ProductoCalculado, Valoracion } from '@/api/tipos';
 import { PieCreditos } from '@/componentes/Creditos';
+import { QueHayDentro } from '@/componentes/Exposicion';
 import { Segmentos } from '@/componentes/Segmentos';
 import { fmtEuros, fmtFecha, fmtPct, fmtUnidades } from '@/formato';
 import { RANGOS, desdeIdx, type Rango } from '@/graficos/escala';
@@ -193,6 +194,8 @@ export default function Ficha() {
           </Tarjeta>
         )}
 
+        <QueHayDentro e={p.exposicion} color={color} fechaExtracto={datos.fechaExtracto} c={c} />
+
         <Tarjeta c={c}>
           <Text style={[estilos.titulo, { color: c.tinta }]}>Datos</Text>
           {campos.filter(([, v]) => v).map(([k, v]) => (
@@ -215,8 +218,7 @@ export default function Ficha() {
             const importe = x.tipo === 'val' ? x.v.valor : x.m.importe;
             const sale = Boolean(m && (m.tipo === 'venta' || (m.tipo === 'traspaso' && m.producto === p.id)));
             const unidades = !m ? null : m.tipo === 'traspaso' && m.destino === p.id ? m.unidadesDestino : m.unidades;
-            // Los ajustes de participaciones se cambian desde el panel web (aquí no hay formulario para ellos).
-            const editableEste = editable && m?.tipo !== 'ajuste';
+            const editableEste = editable;
             return (
               <Pressable
                 key={`${x.tipo}-${x.id}`}

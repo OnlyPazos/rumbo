@@ -9,7 +9,7 @@
  *   (ya vienen escritos para enseñárselos a la persona).
  */
 import type {
-  Cartera, Colchon, CopiaSeguridad, FechaISO, InfoPerfiles, InformeFiscal, InformeImportacion, RespuestaTraspaso, Movimiento, Objetivo, Producto,
+  Cartera, Colchon, CopiaSeguridad, FechaISO, InfoPerfiles, InformeFiscal, InformeImportacion, PeticionPeriodica, PlanPeriodica, RespuestaTraspaso, Movimiento, Objetivo, Producto,
   RepartoObjetivo, RespuestaCambio, RespuestaCartera, RespuestaPanel, ResultadoBusqueda,
   Valoracion, Version,
 } from './tipos';
@@ -207,15 +207,15 @@ export class ClienteRumbo {
     return this.json<RespuestaCambio<unknown>>('DELETE', `/api/${coleccion}/${encodeURIComponent(id)}`);
   }
 
-  guardarObjetivo(objetivo: Partial<Objetivo>) {
+  guardarObjetivo(objetivo: { activo: boolean; importe?: NumeroOTexto; etiqueta?: string }) {
     return this.post<RespuestaCambio<Objetivo>>('/api/objetivo', objetivo);
   }
 
-  guardarColchon(colchon: Colchon | { borrar: true }) {
+  guardarColchon(colchon: { modo: 'meses'; meses: NumeroOTexto; gastoMensual: NumeroOTexto } | { modo: 'importe'; importe: NumeroOTexto } | { borrar: true }) {
     return this.post<RespuestaCambio<Colchon | null>>('/api/colchon', colchon);
   }
 
-  guardarReparto(reparto: Partial<RepartoObjetivo> & { borrar?: boolean }) {
+  guardarReparto(reparto: (Omit<Partial<RepartoObjetivo>, 'vigilar' | 'rebalancear'> & { vigilar?: NumeroOTexto; rebalancear?: NumeroOTexto }) | { borrar: true }) {
     return this.post<RespuestaCambio<RepartoObjetivo | null>>('/api/reparto', reparto);
   }
 
@@ -246,16 +246,17 @@ export class ClienteRumbo {
 
   // ------------------------------------------------------------ aportaciones periódicas
 
-  verPeriodicas(datos: Record<string, unknown>) {
-    return this.post<{ ok: true; plan: Record<string, unknown> }>('/api/periodicas/ver', datos);
+  verPeriodicas(datos: PeticionPeriodica) {
+    return this.post<{ ok: true; plan: PlanPeriodica }>('/api/periodicas/ver', datos);
   }
 
-  crearPeriodicas(datos: Record<string, unknown>) {
-    return this.post<RespuestaCambio<unknown>>('/api/periodicas/crear', datos);
+  crearPeriodicas(datos: PeticionPeriodica) {
+    return this.post<RespuestaCambio<{ anadidas: number; saltadas: number }>>('/api/periodicas/crear', datos);
   }
 
-  olvidarPeriodicas(datos: Record<string, unknown>) {
-    return this.post<RespuestaCambio<unknown>>('/api/periodicas/olvidar', datos);
+  /** Deja de recordar una periódica (no borra las compras ya anotadas). */
+  olvidarPeriodicas(producto: string, dia: number) {
+    return this.post<RespuestaCambio<null>>('/api/periodicas/olvidar', { producto, dia });
   }
 
   // ------------------------------------------------------------ Renta
@@ -301,6 +302,11 @@ export class ClienteRumbo {
     const form = new FormData();
     form.append('archivo', archivo as any);
     return this.json<{ ok: true }>('POST', '/api/copia/subir', { form });
+  }
+
+  /** Dirección y cabeceras para descargar un archivo (Excel, copia…) fuera de fetch, con la llave. */
+  peticionDescarga(ruta: string, consulta?: Consulta) {
+    return { url: this.url(ruta, consulta), headers: { Authorization: `Bearer ${this.conexion.llave}` } };
   }
 
   /**

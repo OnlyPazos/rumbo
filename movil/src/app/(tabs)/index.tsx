@@ -11,7 +11,10 @@ import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
 
 import { ErrorRumbo } from '@/api/cliente';
 import type { PanelDatos, ProductoCalculado } from '@/api/tipos';
+import { AvisosPeriodicas } from '@/componentes/AvisosPeriodicas';
 import { PieCreditos } from '@/componentes/Creditos';
+import { DondeEstaTuDinero } from '@/componentes/Exposicion';
+import { Liquidez, ProgresoObjetivo, RepartoObjetivo } from '@/componentes/Metas';
 import { confirmar } from '@/componentes/Formulario';
 import { Segmentos } from '@/componentes/Segmentos';
 import { fmtEuros, fmtFecha, fmtPct } from '@/formato';
@@ -125,6 +128,7 @@ export default function Panel() {
 
         {datos && (
           <>
+            <AvisosPeriodicas />
             {datos.modo === 'demo' && (
               <Tarjeta c={c}>
                 <Text style={[estilos.aviso, { color: c.aviso }]}>Estás viendo la cartera de ejemplo.</Text>
@@ -151,6 +155,7 @@ export default function Panel() {
               <Text style={[estilos.pequeno, { color: c.tinta3 }]}>
                 Aportado {fmtEuros(datos.total.aportado)} · datos a {fmtFecha(datos.fechaExtracto)}
               </Text>
+              <ProgresoObjetivo datos={datos} c={c} editable={datos.modo === 'propio'} />
             </Tarjeta>
 
             <Segmentos opciones={RANGOS} activo={rango} alCambiar={setRango} />
@@ -168,6 +173,10 @@ export default function Panel() {
               <View style={{ height: 10 }} />
               <Donut key={reparto} c={c} datos={datosReparto(datos, productos, reparto, c)} />
             </Tarjeta>
+
+            <DondeEstaTuDinero productos={productos} c={c} />
+            <Liquidez datos={datos} productos={productos} c={c} editable={datos.modo === 'propio'} />
+            <RepartoObjetivo datos={datos} productos={productos} c={c} editable={datos.modo === 'propio'} />
 
             <Tarjeta c={c}>
               <Text style={[estilos.titulo, { color: c.tinta }]}>Aportaciones de cada mes</Text>

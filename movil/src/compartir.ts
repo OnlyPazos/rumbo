@@ -24,3 +24,33 @@ export async function compartirTexto(nombre: string, contenido: string, mime = '
   if (!(await Sharing.isAvailableAsync())) throw new Error('Este dispositivo no permite compartir archivos.');
   await Sharing.shareAsync(archivo.uri, { mimeType: mime, dialogTitle: nombre, UTI: mime === 'text/csv' ? 'public.comma-separated-values-text' : undefined });
 }
+
+/**
+ * Descarga un archivo de Rumbo (con la llave en la cabecera) y lo comparte: en el móvil, al menú de
+ * compartir del sistema (para guardarlo en Archivos, mandarlo por correo…); en web, como descarga.
+ */
+export async function compartirDescarga(peticion: { url: string; headers: Record<string, string> }, nombre: string, mime: string) {
+  if (Platform.OS === 'web') {
+    const r = await fetch(peticion.url, { headers: peticion.headers });
+    if (!r.ok) throw new Error(await mensajeDeError(r));
+    const url = URL.createObjectURL(await r.blob());
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombre;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    return;
+  }
+  const archivo = await File.downloadFileAsync(peticion.url, new File(Paths.cache, nombre), { headers: peticion.headers, idempotent: true });
+  if (!(await Sharing.isAvailableAsync())) throw new Error('Este dispositivo no permite compartir archivos.');
+  await Sharing.shareAsync(archivo.uri, { mimeType: mime, dialogTitle: nombre });
+}
+
+async function mensajeDeError(r: Response) {
+  try {
+    const j = await r.json();
+    return (j.errores ?? [j.error]).filter(Boolean).join(' ') || `Error ${r.status}`;
+  } catch {
+    return `Error ${r.status}`;
+  }
+}
