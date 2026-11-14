@@ -157,6 +157,157 @@ def _rechazo(texto):
     return Response(texto, status=403, mimetype="text/plain")
 
 
+# ---------------------------------------------------------------- app móvil (fork rumbo-expo)
+# La app de Expo (iOS, Android y web) no usa la cookie: manda la llave en la cabecera
+# «Authorization: Bearer <llave>». Un navegador nunca añade esa cabecera por su cuenta (al
+# contrario que una cookie), así que otra web abierta no puede usarla sin conocer la llave: las
+# comprobaciones de Sec-Fetch-Site y Origin, que protegen la cookie, no hacen falta con ella.
+# Para la versión web servida desde otra dirección (p. ej. el servidor de desarrollo de Expo),
+# CORS solo se abre a los orígenes de PATRIMONIO_ORIGENES_APP (separados por comas).
+
+def llave_en_cabecera():
+    """La llave que llega en «Authorization: Bearer …», o None si no viene."""
+    valor = request.headers.get("Authorization", "")
+    return valor[7:].strip() if valor[:7].lower() == "bearer " else None
+
+
+def origenes_app():
+    extra = os.environ.get("PATRIMONIO_ORIGENES_APP") or ""
+    return {o.strip().rstrip("/") for o in extra.split(",") if o.strip()}
+
+
+def origen_app():
+    """El Origin de la petición si es uno de los permitidos para la app; si no, None."""
+    origen = (request.headers.get("Origin") or "").rstrip("/")
+    return origen if origen and origen in origenes_app() else None
+
+
+# Conectar el móvil con un QR (dirección + llave), en el terminal al arrancar y en /movil.
+# El paquete qrcode es opcional: sin él, Rumbo funciona igual pero no dibuja el QR.
+try:
+    import qrcode
+except ImportError:   # pragma: no cover
+    qrcode = None
+
+TAILSCALE = ipaddress.ip_network("100.64.0.0/10")
+
+
+def direcciones_de_red():
+    """IPv4 de este equipo por las que puede entrar el móvil: la de la red de casa primero
+    (la de la ruta por defecto) y luego las demás privadas, como la de Tailscale."""
+    import socket
+    ips = []
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("192.0.2.1", 9))   # dirección de documentación: no se envía nada
+            ips.append(s.getsockname()[0])
+    except OSError:
+        pass
+    try:
+        ips += [i[4][0] for i in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET)]
+    except OSError:
+        pass
+    buenas = []
+    for ip in ips:
+        d = ipaddress.ip_address(ip)
+        if ip not in buenas and not d.is_loopback and not d.is_link_local and (d.is_private or d in TAILSCALE):
+            buenas.append(ip)
+    return buenas
+
+
+def qr_matriz(texto):
+    """Módulos del QR (True = negro), con margen. None si no está el paquete qrcode."""
+    if qrcode is None:
+        return None
+    q = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, border=2)
+    q.add_data(texto)
+    q.make(fit=True)
+    return q.get_matrix()
+
+
+def qr_terminal(texto):
+    """El QR con medios bloques (dos filas por línea), en claro sobre el fondo oscuro del terminal."""
+    m = qr_matriz(texto)
+    if m is None:
+        return None
+    if len(m) % 2:
+        m = m + [[False] * len(m[0])]
+    trozo = {(True, True): "█", (True, False): "▀", (False, True): "▄", (False, False): " "}
+    return "\n".join("  " + "".join(trozo[(not a, not b)] for a, b in zip(m[i], m[i + 1]))
+                     for i in range(0, len(m), 2))
+
+
+def qr_svg(texto, tam=260):
+    m = qr_matriz(texto)
+    if m is None:
+        return None
+    n = len(m)
+    trazo = "".join(f"M{x},{y}h1v1h-1z" for y, fila in enumerate(m) for x, v in enumerate(fila) if v)
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {n} {n}" width="{tam}" height="{tam}" '
+            f'shape-rendering="crispEdges"><rect width="{n}" height="{n}" fill="#fff"/>'
+            f'<path d="{trazo}" fill="#000"/></svg>')
+
+
+def url_movil(host):
+    return f"http://{host}/?acceso={token_acceso()}"
+
+
+def imprime_conexion_movil(puerto):
+    """Al arrancar abierta a la red: el QR para conectar la app del móvil."""
+    if en_docker():
+        # Dentro de Docker no se sabe la IP del NAS: el QR lo enseña la página /movil.
+        print(f"  Para conectar la app del móvil, abre http://IP-DEL-EQUIPO:{puerto}/movil en el navegador")
+        print("  del ordenador (con la dirección de arriba) y escanea el QR con la app.\n")
+        return
+    ips = direcciones_de_red()
+    if not ips:
+        return
+    print("  Para conectar la app del móvil, escanea este QR desde «Conectar» (es tu llave: no lo compartas):\n")
+    dibujo = qr_terminal(url_movil(f"{ips[0]}:{puerto}"))
+    print(dibujo + "\n" if dibujo else "  (instala el paquete «qrcode» para ver el QR)\n")
+    for ip in ips:
+        print(f"      {url_movil(f'{ip}:{puerto}')}")
+    print()
+
+
+PAGINA_MOVIL = """<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Conectar el móvil · Rumbo</title>
+<style>body{{font:16px/1.6 system-ui,sans-serif;margin:8vh auto;max-width:560px;padding:0 22px;color:#1d1d1b;background:#f9f9f7}}
+h1{{font-size:22px}}code{{background:#ecebe6;padding:1px 6px;border-radius:5px;word-break:break-all}}
+.qr{{margin:22px 0 6px}}.qr svg{{border-radius:10px}}.aviso{{color:#8a5a00}}small{{color:#6b6a66}}</style></head><body>
+<h1>Conectar la app del móvil</h1>{cuerpo}
+<p><small>Rumbo es una herramienta de Dani Dominguez Quant (github.com/danidm98/rumbo).</small></p></body></html>"""
+
+
+@app.get("/movil")
+def pagina_movil():
+    """El QR con la dirección y la llave, para escanearlo desde la app (solo con la llave ya puesta)."""
+    import html
+    host = request.host
+    if _sin_puerto(host).strip("[]") in ("127.0.0.1", "localhost", "::1"):
+        if not en_red():
+            cuerpo = ("<p>Ahora Rumbo solo escucha en este ordenador, así que el móvil no puede llegar a él.</p>"
+                      "<p>Arráncalo abierto a la red de casa (<code>PATRIMONIO_HOST=0.0.0.0</code>) o en Docker, "
+                      "y vuelve a esta página.</p>")
+            return Response(PAGINA_MOVIL.format(cuerpo=cuerpo), mimetype="text/html")
+        puerto = host.rsplit(":", 1)[1] if host.count(":") == 1 else str(PUERTO)
+        hosts = [f"{ip}:{puerto}" for ip in direcciones_de_red()]
+    else:
+        hosts = [host]   # la dirección con la que este navegador ya llega a Rumbo
+    if not hosts:
+        cuerpo = "<p>No encuentro la dirección de este equipo en la red de casa.</p>"
+    else:
+        partes = []
+        for h in hosts:
+            url = url_movil(h)
+            svg = qr_svg(url)
+            partes.append((f'<div class="qr">{svg}</div>' if svg else "") + f"<p><code>{html.escape(url)}</code></p>")
+        cuerpo = ("<p>En la app, pulsa <b>Escanear QR</b> en «Conectar» y apunta a este código.</p>" + "".join(partes)
+                  + '<p class="aviso">Este QR es tu llave de acceso: no lo compartas ni le hagas foto para '
+                    "enviarla. Si se te escapa, borra <code>mis_datos/.acceso</code> y reinicia Rumbo para cambiarla.</p>")
+    return Response(PAGINA_MOVIL.format(cuerpo=cuerpo), mimetype="text/html")
+
+
 @app.before_request
 def solo_desde_rumbo():
     if not host_valido(request.host):
@@ -164,6 +315,14 @@ def solo_desde_rumbo():
                         "PATRIMONIO_HOSTS_PERMITIDOS.", status=403, mimetype="text/plain")
     if request.path == "/api/ping":
         return None   # solo dice «soy Rumbo»: el lanzador lo usa para no abrirla dos veces
+    # App de Expo: la consulta previa de CORS (sin llave) y las peticiones con la llave en la cabecera.
+    if request.method == "OPTIONS" and request.path.startswith("/api/") and origen_app():
+        return Response(status=204)
+    dada = llave_en_cabecera()
+    if dada is not None:
+        if hmac.compare_digest(dada.encode("utf-8"), token_acceso().encode("utf-8")):
+            return None
+        return _rechazo("Llave de acceso incorrecta.")
     # Los navegadores modernos dicen quién hace la petición. Solo vale la propia app
     # («same-origin») o escribir la dirección / abrirla desde el lanzador («none»).
     sitio = request.headers.get("Sec-Fetch-Site")
@@ -250,6 +409,14 @@ def cabeceras_seguras(resp):
     resp.headers["X-Frame-Options"] = "DENY"
     resp.headers["Referrer-Policy"] = "no-referrer"
     resp.headers["Cache-Control"] = resp.headers.get("Cache-Control") or "no-store"
+    origen = origen_app()
+    if origen and request.path.startswith("/api/"):   # app de Expo en web, desde otra dirección permitida
+        resp.headers["Access-Control-Allow-Origin"] = origen
+        resp.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, X-Rumbo-Perfil"
+        resp.headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE"
+        resp.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
+        resp.headers["Access-Control-Max-Age"] = "600"
+        resp.headers.add("Vary", "Origin")
     return resp
 
 
@@ -392,13 +559,25 @@ def inicio():
     return send_from_directory(WEB, "index.html")
 
 
-@app.get("/datos.js")
-def datos_js():
+def datos_panel():
+    """Lo que pinta el panel (lo calculado por el motor), recalculándolo si hace falta."""
     datos = lee_json(ruta_calculado())
     if datos is None and not os.path.exists(ruta_calculado()):
         datos = recalcula(descargar=False)
     elif modo() == "demo" and os.path.getmtime(DEMO) > os.path.getmtime(ruta_calculado()):
         datos = recalcula(descargar=False)   # la cartera de ejemplo cambió con una versión nueva
+    return datos
+
+
+@app.get("/api/panel")
+def api_panel():
+    """Lo mismo que /datos.js, pero en JSON: para la app de Expo."""
+    return jsonify(datos=datos_panel(), perfiles=info_perfiles())
+
+
+@app.get("/datos.js")
+def datos_js():
+    datos = datos_panel()
     cuerpo = ("window.DATOS = " + json.dumps(datos, ensure_ascii=False, separators=(",", ":")) + ";\n"
               + "window.PERFILES = " + json.dumps(info_perfiles(), ensure_ascii=False) + ";\n")
     return Response(cuerpo, mimetype="application/javascript",
@@ -1217,6 +1396,7 @@ def main():
         print("  La llave también está en el archivo .acceso de tus datos. Solo hace falta la primera")
         print("  vez en cada navegador. NO abras este puerto a internet: para entrar desde fuera de casa,")
         print("  usa una VPN como Tailscale.\n")
+        imprime_conexion_movil(srv.server_port)   # fork rumbo-expo: QR para la app del móvil
     else:
         if not os.environ.get("PATRIMONIO_NO_ABRIR"):   # para pruebas: no abre el navegador
             threading.Timer(0.8, webbrowser.open, [url_con_llave(srv.server_port)]).start()
