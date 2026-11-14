@@ -36,6 +36,35 @@ export interface Conexion {
 type Metodo = 'GET' | 'POST' | 'DELETE';
 type Consulta = Record<string, string | number | undefined>;
 
+/**
+ * Los números de los formularios pueden ir como texto tal cual lo escribe la persona («1.234,56»):
+ * el backend los entiende (numero() en app/almacen.py) y responde con mensajes claros si no.
+ */
+type NumeroOTexto = number | string | null | undefined;
+
+export interface FormularioMovimiento {
+  id?: string;
+  tipo: Movimiento['tipo'];
+  producto: string;
+  fecha: string;
+  importe?: NumeroOTexto;
+  unidades?: NumeroOTexto;
+  comision?: NumeroOTexto;
+  nota?: string;
+  /** Moneda del importe si no es EUR: el backend lo pasa a euros con el cambio del día. */
+  moneda?: string;
+  destino?: string;
+  unidadesDestino?: NumeroOTexto;
+}
+
+export interface FormularioValoracion {
+  id?: string;
+  producto: string;
+  fecha: string;
+  valor: NumeroOTexto;
+  aportado?: NumeroOTexto;
+}
+
 /** Archivo para subir (importar o recuperar una copia). En web vale un File/Blob. */
 export type ArchivoSubida = { uri: string; name: string; type?: string } | Blob;
 
@@ -166,11 +195,11 @@ export class ClienteRumbo {
     return this.post<RespuestaCambio<Producto>>('/api/productos', producto);
   }
 
-  guardarMovimiento(movimiento: Partial<Movimiento> & { moneda?: string }) {
+  guardarMovimiento(movimiento: FormularioMovimiento) {
     return this.post<RespuestaCambio<Movimiento>>('/api/movimientos', movimiento);
   }
 
-  guardarValoracion(valoracion: Partial<Valoracion>) {
+  guardarValoracion(valoracion: FormularioValoracion) {
     return this.post<RespuestaCambio<Valoracion>>('/api/valoraciones', valoracion);
   }
 

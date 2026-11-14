@@ -3,8 +3,8 @@
  * Cifras clave, evolución, reparto, aportaciones de cada mes y la lista de productos.
  * El periodo elegido (1M … Todo) vale para la evolución, las aportaciones y las mini gráficas.
  */
-import { Link, Redirect, Stack } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { Link, Redirect, Stack, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 // ScrollView y RefreshControl de gesture-handler: coordinan en nativo el scroll con los gráficos que se arrastran.
 import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
@@ -12,6 +12,7 @@ import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
 import { ErrorRumbo } from '@/api/cliente';
 import type { PanelDatos, ProductoCalculado, RespuestaPanel } from '@/api/tipos';
 import { PieCreditos } from '@/componentes/Creditos';
+import { confirmar } from '@/componentes/Formulario';
 import { Segmentos } from '@/componentes/Segmentos';
 import { fmtEuros, fmtFecha, fmtPct } from '@/formato';
 import { BarrasMensuales } from '@/graficos/BarrasMensuales';
@@ -48,18 +49,37 @@ export default function Panel() {
     }
   }, [cliente]);
 
-  // Primera carga (y cada vez que cambia la conexión). Reintentar y refrescar usan cargar().
-  useEffect(() => {
+  // Carga al entrar y cada vez que se vuelve al panel (por ejemplo, después de anotar algo).
+  useFocusEffect(
+    useCallback(() => {
+      if (!cliente) return;
+      let vigente = true;
+      cliente.cargarPanel().then(
+        (r) => vigente && (setError(null), setPanel(r)),
+        (e) => vigente && setError(e instanceof ErrorRumbo ? e.message : String(e)),
+      );
+      return () => {
+        vigente = false;
+      };
+    }, [cliente]),
+  );
+
+  /** Sale de la cartera de ejemplo: crea la tuya, vacía o como copia del ejemplo para practicar. */
+  async function empezar(desde: 'vacia' | 'ejemplo') {
     if (!cliente) return;
-    let vigente = true;
-    cliente.cargarPanel().then(
-      (r) => vigente && (setError(null), setPanel(r)),
-      (e) => vigente && setError(e instanceof ErrorRumbo ? e.message : String(e)),
+    const ok = await confirmar(
+      'Empezar con mis datos',
+      desde === 'vacia' ? 'Se crea tu cartera, vacía, para que anotes lo tuyo.' : 'Se crea tu cartera como copia del ejemplo, para practicar.',
+      'Empezar',
     );
-    return () => {
-      vigente = false;
-    };
-  }, [cliente]);
+    if (!ok) return;
+    try {
+      await cliente.empezar(desde);
+      await cargar();
+    } catch (e) {
+      setError(e instanceof ErrorRumbo ? e.message : String(e));
+    }
+  }
 
   async function actualizarPrecios() {
     if (!cliente) return;
@@ -88,7 +108,12 @@ export default function Panel() {
         options={{
           title: datos?.titular ?? 'Rumbo',
           headerRight: () => (
-            <Link href="/conectar" style={{ color: c.acento, fontSize: 15 }}>Conexión</Link>
+            <View style={{ flexDirection: 'row', gap: 18, alignItems: 'center' }}>
+              <Link href="/conectar" style={{ color: c.tinta2, fontSize: 15 }}>Conexión</Link>
+              {panel?.datos?.modo === 'propio' || (panel && !panel.datos) ? (
+                <Link href="/anotar" style={{ color: c.acento, fontSize: 15, fontWeight: '700' }}>+ Anotar</Link>
+              ) : null}
+            </View>
           ),
         }}
       />
@@ -107,14 +132,28 @@ export default function Panel() {
 
         {panel && !datos && (
           <Tarjeta c={c}>
-            <Text style={{ color: c.tinta2 }}>Tu cartera está vacía: añade productos y movimientos para ver el panel.</Text>
+            <Text style={{ color: c.tinta2 }}>
+              Tu cartera está vacía. Crea tus productos desde el panel web de Rumbo (en el ordenador) y anota aquí
+              sus compras y saldos con «+ Anotar».
+            </Text>
           </Tarjeta>
         )}
 
         {datos && (
           <>
             {datos.modo === 'demo' && (
-              <Text style={[estilos.aviso, { color: c.aviso }]}>Estás viendo la cartera de ejemplo.</Text>
+              <Tarjeta c={c}>
+                <Text style={[estilos.aviso, { color: c.aviso }]}>Estás viendo la cartera de ejemplo.</Text>
+                <Text style={[estilos.pequeno, { color: c.tinta2 }]}>Para anotar lo tuyo, empieza tu propia cartera:</Text>
+                <View style={{ flexDirection: 'row', gap: 16, marginTop: 4 }}>
+                  <Pressable onPress={() => empezar('vacia')}>
+                    <Text style={{ color: c.acento, fontWeight: '700' }}>Empezar con mis datos</Text>
+                  </Pressable>
+                  <Pressable onPress={() => empezar('ejemplo')}>
+                    <Text style={{ color: c.tinta2 }}>Copiar el ejemplo</Text>
+                  </Pressable>
+                </View>
+              </Tarjeta>
             )}
 
             <Tarjeta c={c}>

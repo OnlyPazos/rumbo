@@ -23,6 +23,7 @@ export default function Raiz() {
         <Stack.Screen name="index" options={{ title: 'Rumbo' }} />
         <Stack.Screen name="conectar" options={{ title: 'Conectar con tu Rumbo' }} />
         <Stack.Screen name="escanear" options={{ title: 'Escanear QR', presentation: 'modal' }} />
+        <Stack.Screen name="anotar" options={{ title: 'Anotar' }} />
         <Stack.Screen name="acerca" options={{ title: 'Acerca de' }} />
       </Stack>
     </ProveedorSesion>
