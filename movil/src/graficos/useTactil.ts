@@ -12,6 +12,10 @@ import { useCompetingGestures, usePanGesture, useTapGesture } from 'react-native
 
 const SEGUNDOS_TOQUE = 3;
 
+// ENJS: expo-router trae Reanimated, y con él gesture-handler ejecuta los callbacks como worklets en el
+// hilo de la interfaz. Desde ahí no se puede llamar a setState (la app se cierra al arrastrar), así que
+// se piden en el hilo de JavaScript con runOnJS.
+
 export function useTactil(alMover: (x: number) => number | null) {
   const [indice, setIndice] = useState<number | null>(null);
   const reloj = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -23,6 +27,7 @@ export function useTactil(alMover: (x: number) => number | null) {
   useEffect(() => quitaReloj, []);
 
   const arrastre = usePanGesture({
+    runOnJS: true,            // ver ENJS arriba
     activeOffsetX: [-6, 6],   // 6 puntos en horizontal: es del gráfico
     failOffsetY: [-10, 10],   // 10 en vertical antes: es scroll
     onActivate: (e) => {
@@ -34,6 +39,7 @@ export function useTactil(alMover: (x: number) => number | null) {
   });
 
   const toque = useTapGesture({
+    runOnJS: true,
     onActivate: (e) => {
       quitaReloj();
       setIndice(alMover(e.x));
