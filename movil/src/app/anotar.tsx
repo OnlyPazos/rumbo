@@ -195,6 +195,11 @@ export default function Anotar() {
           )}
 
           {!editando && <Chips opciones={TIPOS} activo={tipo} alCambiar={(t) => { setTipo(t); setErrores([]); }} />}
+          {!editando && tipo === 'compra' && (
+            <Pressable onPress={() => router.replace({ pathname: '/periodica', params: productoValido ? { producto: productoValido.id } : {} })}>
+              <Text style={{ color: c.acento }}>↻ ¿Aportas lo mismo cada mes? Prepara todas de una vez</Text>
+            </Pressable>
+          )}
 
           <Seccion titulo={tipo === 'traspaso' ? 'Sale de' : 'Producto'}>
             {opcionesProducto.length ? (

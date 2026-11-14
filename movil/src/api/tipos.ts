@@ -124,6 +124,8 @@ export interface Cartera {
   objetivo: Objetivo;
   colchon?: Colchon;
   objetivoReparto?: RepartoObjetivo;
+  /** Aportaciones periódicas que Rumbo recuerda para avisar de las siguientes. */
+  periodicas?: { producto: string; importe: number; dia: number; ultima: FechaISO }[];
   [extra: string]: unknown;
 }
 
@@ -456,6 +458,36 @@ export interface InformeImportacion {
   productosNuevos: (Partial<Producto> & { precio?: number | null; monedaPrecio?: string; fechaPrecio?: FechaISO; mercado?: string })[];
   filas: { fila: string | number; fecha: FechaISO; producto: string; productoNombre: string; tipo: string; unidades: number | null; importe: number; marcas: string[]; estado: string }[];
   traspasosMyInvestor: TraspasoMyInvestor[];
+}
+
+/** Lo que manda el formulario de una aportación periódica (los números pueden ir como texto). */
+export interface PeticionPeriodica {
+  producto: string;
+  importe: number | string;
+  dia: number | string;
+  desde: FechaISO;
+  hasta?: FechaISO;
+}
+
+/** POST /api/periodicas/ver: las compras que se añadirían, con el precio de cada día (app/periodicas.py). */
+export interface PlanPeriodica {
+  producto: string;
+  nombre: string;
+  aMano: boolean;
+  importe: number;
+  dia: number;
+  desde: FechaISO;
+  hasta: FechaISO;
+  lineas: {
+    fecha: FechaISO;
+    importe: number;
+    precio: number | null;
+    fechaPrecio: FechaISO | null;
+    unidades: number | null;
+    /** nueva: se añade · repetida: ya la tienes anotada · sinPrecio: no hay cierre esa semana. */
+    estado: 'nueva' | 'repetida' | 'sinPrecio';
+  }[];
+  nuevas: number;
 }
 
 export interface CopiaSeguridad {

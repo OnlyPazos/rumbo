@@ -9,7 +9,7 @@
  *   (ya vienen escritos para enseñárselos a la persona).
  */
 import type {
-  Cartera, Colchon, CopiaSeguridad, FechaISO, InfoPerfiles, InformeFiscal, InformeImportacion, RespuestaTraspaso, Movimiento, Objetivo, Producto,
+  Cartera, Colchon, CopiaSeguridad, FechaISO, InfoPerfiles, InformeFiscal, InformeImportacion, PeticionPeriodica, PlanPeriodica, RespuestaTraspaso, Movimiento, Objetivo, Producto,
   RepartoObjetivo, RespuestaCambio, RespuestaCartera, RespuestaPanel, ResultadoBusqueda,
   Valoracion, Version,
 } from './tipos';
@@ -246,16 +246,17 @@ export class ClienteRumbo {
 
   // ------------------------------------------------------------ aportaciones periódicas
 
-  verPeriodicas(datos: Record<string, unknown>) {
-    return this.post<{ ok: true; plan: Record<string, unknown> }>('/api/periodicas/ver', datos);
+  verPeriodicas(datos: PeticionPeriodica) {
+    return this.post<{ ok: true; plan: PlanPeriodica }>('/api/periodicas/ver', datos);
   }
 
-  crearPeriodicas(datos: Record<string, unknown>) {
-    return this.post<RespuestaCambio<unknown>>('/api/periodicas/crear', datos);
+  crearPeriodicas(datos: PeticionPeriodica) {
+    return this.post<RespuestaCambio<{ anadidas: number; saltadas: number }>>('/api/periodicas/crear', datos);
   }
 
-  olvidarPeriodicas(datos: Record<string, unknown>) {
-    return this.post<RespuestaCambio<unknown>>('/api/periodicas/olvidar', datos);
+  /** Deja de recordar una periódica (no borra las compras ya anotadas). */
+  olvidarPeriodicas(producto: string, dia: number) {
+    return this.post<RespuestaCambio<null>>('/api/periodicas/olvidar', { producto, dia });
   }
 
   // ------------------------------------------------------------ Renta

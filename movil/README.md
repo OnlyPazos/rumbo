@@ -29,6 +29,7 @@ src/
     producto/[id].tsx     ficha de un producto: cifras, evolución o precio, datos y movimientos
     editar-producto.tsx   añadir o editar un producto, con el buscador
     anotar.tsx            anotar o editar compras, ventas, dividendos, comisiones, traspasos y saldos
+    periodica.tsx         aportación periódica: una compra por mes con el precio de cada día
     renta.tsx             resumen para la Renta y compartir el CSV
     importar.tsx          importar de MyInvestor, Excel/CSV o el texto de una IA
     conectar.tsx          dirección + llave del servidor (o con el QR)
@@ -42,6 +43,7 @@ src/
   componentes/            piezas compartidas (créditos, selectores, formulario, iconos)
   compartir.ts            compartir un archivo (menú del sistema; descarga en web)
   formato.ts              números y fechas en es-ES (numEs entiende lo mismo que el backend)
+  periodicas.ts           qué aportaciones periódicas toca anotar (portado de calculos.js, con sus pruebas)
   tema.ts                 colores del panel original, claro y oscuro
 tests/                    pruebas de los cálculos (npm test, con node --test)
 ```
@@ -62,7 +64,7 @@ npx expo-doctor
 
 ## Pendiente
 
-- Lo que aún solo está en el panel web: aportaciones periódicas, ajustes de participaciones, objetivo, fondo de
+- Lo que aún solo está en el panel web: ajustes de participaciones, objetivo, fondo de
   emergencia y reparto objetivo, «dónde está tu dinero» (países y sectores), copias de seguridad, exportar a Excel
   y «Compartir mi mes».
 - Builds de tienda: Rumbo va por HTTP dentro de casa / Tailscale. En Android hará falta permitir tráfico sin TLS

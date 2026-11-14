@@ -11,6 +11,7 @@ import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
 
 import { ErrorRumbo } from '@/api/cliente';
 import type { PanelDatos, ProductoCalculado } from '@/api/tipos';
+import { AvisosPeriodicas } from '@/componentes/AvisosPeriodicas';
 import { PieCreditos } from '@/componentes/Creditos';
 import { confirmar } from '@/componentes/Formulario';
 import { Segmentos } from '@/componentes/Segmentos';
@@ -125,6 +126,7 @@ export default function Panel() {
 
         {datos && (
           <>
+            <AvisosPeriodicas />
             {datos.modo === 'demo' && (
               <Tarjeta c={c}>
                 <Text style={[estilos.aviso, { color: c.aviso }]}>Estás viendo la cartera de ejemplo.</Text>
