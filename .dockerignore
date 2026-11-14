@@ -11,3 +11,6 @@ docs
 *.tmp
 Iniciar.*
 BACKLOG_COMENTARIOS_E_ISSUES.md
+
+# Fork rumbo-expo: la app de Expo no va en la imagen del backend
+movil
