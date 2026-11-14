@@ -120,6 +120,7 @@ export default function Mas() {
       <Tarjeta c={c}>
         <Enlace c={c} href="/renta" titulo="Para la Renta" nota="Tus ventas del año (FIFO), dividendos e intereses." />
         <Enlace c={c} href="/importar" titulo="Importar" nota="De MyInvestor, de un Excel o CSV, o el texto que te dé una IA." />
+        <Enlace c={c} href="/copias" titulo="Copias y Excel" nota="Copias de seguridad, recuperar una y exportar tus datos a Excel." />
       </Tarjeta>
 
       <Tarjeta c={c}>

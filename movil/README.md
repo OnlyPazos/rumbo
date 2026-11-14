@@ -28,13 +28,14 @@ src/
       mas.tsx             Más: perfiles, Renta, importar, conexión, versión y créditos
     producto/[id].tsx     ficha de un producto: cifras, evolución o precio, datos y movimientos
     editar-producto.tsx   añadir o editar un producto, con el buscador
-    anotar.tsx            anotar o editar compras, ventas, dividendos, comisiones, traspasos y saldos
+    anotar.tsx            anotar o editar compras, ventas, dividendos, comisiones, traspasos, saldos y ajustes
     periodica.tsx         aportación periódica: una compra por mes con el precio de cada día
     objetivo.tsx          mi objetivo de patrimonio (o el siguiente hito)
     colchon.tsx           fondo de emergencia: meses de gastos o importe fijo
     reparto-objetivo.tsx  reparto objetivo: % por tipo de activo o producto, márgenes y qué cuenta
     renta.tsx             resumen para la Renta y compartir el CSV
     importar.tsx          importar de MyInvestor, Excel/CSV o el texto de una IA
+    copias.tsx            copias de seguridad (recuperar, descargar, subir) y exportar a Excel
     conectar.tsx          dirección + llave del servidor (o con el QR)
     escanear.tsx          escáner del QR (expo-camera)
     acerca.tsx            créditos al autor original
@@ -44,7 +45,7 @@ src/
   graficos/               gráficos SVG (react-native-svg) y sus cálculos (escala.ts, sin dependencias)
   sesion/                 la conexión (SecureStore / localStorage) y los datos del panel compartidos
   componentes/            piezas compartidas (créditos, selectores, formulario, iconos)
-  compartir.ts            compartir un archivo (menú del sistema; descarga en web)
+  compartir.ts            compartir un archivo o una descarga de Rumbo (menú del sistema; descarga en web)
   formato.ts              números y fechas en es-ES (numEs entiende lo mismo que el backend)
   periodicas.ts           qué aportaciones periódicas toca anotar (portado de calculos.js, con sus pruebas)
   calculos.ts             países y sectores, liquidez, reparto objetivo y objetivo (portado de calculos.js, con sus pruebas)
@@ -68,7 +69,7 @@ npx expo-doctor
 
 ## Pendiente
 
-- Lo que aún solo está en el panel web: ajustes de participaciones, copias de seguridad, exportar a Excel y «Compartir mi mes».
+- Lo que aún solo está en el panel web: «Compartir mi mes».
 - Builds de tienda: Rumbo va por HTTP dentro de casa / Tailscale. En Android hará falta permitir tráfico sin TLS
   (`expo-build-properties` → `android.usesCleartextTraffic`), y en iOS revisar ATS para las IP de Tailscale (100.x),
   o poner Rumbo detrás de HTTPS (Tailscale Serve).

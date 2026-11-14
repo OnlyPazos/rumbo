@@ -304,6 +304,11 @@ export class ClienteRumbo {
     return this.json<{ ok: true }>('POST', '/api/copia/subir', { form });
   }
 
+  /** Dirección y cabeceras para descargar un archivo (Excel, copia…) fuera de fetch, con la llave. */
+  peticionDescarga(ruta: string, consulta?: Consulta) {
+    return { url: this.url(ruta, consulta), headers: { Authorization: `Bearer ${this.conexion.llave}` } };
+  }
+
   /**
    * Descargas (devuelven la respuesta tal cual, para guardarla o compartirla):
    * /api/copia/descargar, /api/exportar-excel, /api/plantilla.xlsx, /api/plantilla.csv,

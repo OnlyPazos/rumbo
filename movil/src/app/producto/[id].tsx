@@ -218,8 +218,7 @@ export default function Ficha() {
             const importe = x.tipo === 'val' ? x.v.valor : x.m.importe;
             const sale = Boolean(m && (m.tipo === 'venta' || (m.tipo === 'traspaso' && m.producto === p.id)));
             const unidades = !m ? null : m.tipo === 'traspaso' && m.destino === p.id ? m.unidadesDestino : m.unidades;
-            // Los ajustes de participaciones se cambian desde el panel web (aquí no hay formulario para ellos).
-            const editableEste = editable && m?.tipo !== 'ajuste';
+            const editableEste = editable;
             return (
               <Pressable
                 key={`${x.tipo}-${x.id}`}

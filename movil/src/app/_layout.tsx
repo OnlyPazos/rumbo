@@ -36,6 +36,7 @@ export default function Raiz() {
             <Stack.Screen name="reparto-objetivo" options={{ title: 'Reparto objetivo' }} />
             <Stack.Screen name="renta" options={{ title: 'Para la Renta' }} />
             <Stack.Screen name="importar" options={{ title: 'Importar' }} />
+            <Stack.Screen name="copias" options={{ title: 'Copias y Excel' }} />
             <Stack.Screen name="acerca" options={{ title: 'Acerca de' }} />
           </Stack>
         </PanelDeEsteServidor>

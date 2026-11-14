@@ -16,11 +16,12 @@ import { fechaDesdeTexto, fmtEuros, fmtFecha, hoyISO, numEs } from '@/formato';
 import { useSesion } from '@/sesion/contexto';
 import { RADIO, useColores } from '@/tema';
 
-type Tipo = 'compra' | 'venta' | 'dividendo' | 'comision' | 'traspaso' | 'saldo';
+type Tipo = 'compra' | 'venta' | 'dividendo' | 'comision' | 'traspaso' | 'saldo' | 'ajuste';
 
 const TIPOS: { id: Tipo; et: string }[] = [
   { id: 'compra', et: 'Compra' }, { id: 'venta', et: 'Venta' }, { id: 'dividendo', et: 'Dividendo / interés' },
   { id: 'comision', et: 'Comisión' }, { id: 'traspaso', et: 'Traspaso' }, { id: 'saldo', et: 'Saldo / valor' },
+  { id: 'ajuste', et: 'Cuadrar participaciones' },
 ];
 
 /** Cuentas y deudas se siguen solo con saldos (SOLO_SALDO en app/almacen.py). */
@@ -31,6 +32,8 @@ const cotiza = (p: Producto | undefined) => Boolean(p && p.fuente !== 'manual');
 function admite(tipo: Tipo, p: Producto) {
   if (tipo === 'saldo') return true;
   if (tipo === 'dividendo') return p.tipo !== 'deuda';
+  // Ajuste: solo lo que tiene participaciones (cotiza y no es una cuenta), como guarda_ajuste.
+  if (tipo === 'ajuste') return cotiza(p) && !soloSaldo(p);
   return !soloSaldo(p);
 }
 
@@ -59,6 +62,8 @@ export default function Anotar() {
   const [moneda, setMoneda] = useState('EUR');
   const [nota, setNota] = useState('');
   const [verMas, setVerMas] = useState(false);
+  /** Ajuste: las participaciones que calcula Rumbo ese día, para compararlas con las del banco. */
+  const [calculadas, setCalculadas] = useState<number | null>(null);
 
   const editando = param.mov ?? param.val ?? null;
 
@@ -73,7 +78,7 @@ export default function Anotar() {
         setModo(r.modo);
         const m = param.mov ? r.cartera.movimientos.find((x) => x.id === param.mov) : null;
         const v = param.val ? r.cartera.valoraciones.find((x) => x.id === param.val) : null;
-        if (m && m.tipo !== 'ajuste') {
+        if (m) {
           setTipo(m.tipo as Tipo);
           setProducto(m.producto);
           setFecha(fmtFecha(m.fecha));
@@ -132,6 +137,18 @@ export default function Anotar() {
     }
   }
 
+  async function verCalculadas() {
+    if (!cliente || !productoValido || !fechaISO) {
+      setErrores(['Elige antes el producto y la fecha.']);
+      return;
+    }
+    try {
+      setCalculadas((await cliente.unidades(productoValido.id, fechaISO, param.mov)).unidades);
+    } catch (e) {
+      setErrores([e instanceof ErrorRumbo ? e.message : String(e)]);
+    }
+  }
+
   async function guardar() {
     if (!cliente) return;
     const faltan: string[] = [];
@@ -146,6 +163,8 @@ export default function Anotar() {
     try {
       if (tipo === 'saldo') {
         await cliente.guardarValoracion({ id: param.val, producto: productoValido!.id, fecha: fechaISO!, valor: importe, aportado });
+      } else if (tipo === 'ajuste') {
+        await cliente.guardarMovimiento({ id: param.mov, tipo, producto: productoValido!.id, fecha: fechaISO!, unidades, nota });
       } else {
         await cliente.guardarMovimiento({
           id: param.mov, tipo, producto: productoValido!.id, fecha: fechaISO!,
@@ -206,7 +225,9 @@ export default function Anotar() {
               <Chips opciones={opcionesProducto} activo={productoValido?.id ?? null} alCambiar={setProducto} />
             ) : (
               <Text style={{ color: c.tinta3 }}>
-                {tipo === 'saldo' ? 'Aún no tienes productos.' : 'No tienes productos de este tipo. Las cuentas y deudas se anotan con «Saldo / valor».'}
+                {tipo === 'saldo' ? 'Aún no tienes productos.'
+                  : tipo === 'ajuste' ? 'Solo se cuadran los productos con precio en internet (fondos, ETF, acciones…).'
+                  : 'No tienes productos de este tipo. Las cuentas y deudas se anotan con «Saldo / valor».'}
               </Text>
             )}
           </Seccion>
@@ -232,7 +253,21 @@ export default function Anotar() {
             }
           />
 
-          <Campo etiqueta={etImporte} value={importe} onChangeText={setImporte} placeholder="0,00" keyboardType="decimal-pad" />
+          {tipo === 'ajuste' ? (
+            <>
+              <Text style={[estilos.pista, { color: c.tinta2 }]}>
+                Si las participaciones que calcula Rumbo no coinciden con las de tu banco (por ejemplo, tras importar traspasos),
+                anota aquí las del banco: desde esa fecha el producto tendrá exactamente esas, sin tocar lo que pagaste.
+              </Text>
+              <Campo
+                etiqueta="Participaciones según tu banco" value={unidades} onChangeText={setUnidades} placeholder="0,000000"
+                keyboardType="decimal-pad" derecha={<Mini texto="¿Y Rumbo?" alPulsar={verCalculadas} />}
+                ayuda={calculadas != null ? `Ese día Rumbo calcula ${calculadas.toLocaleString('es-ES', { maximumFractionDigits: 6 })}.` : undefined}
+              />
+            </>
+          ) : (
+            <Campo etiqueta={etImporte} value={importe} onChangeText={setImporte} placeholder="0,00" keyboardType="decimal-pad" />
+          )}
 
           {(tipo === 'compra' || tipo === 'venta' || tipo === 'traspaso') && (
             <Campo
@@ -262,7 +297,7 @@ export default function Anotar() {
           {tipo !== 'saldo' && (
             <>
               <Campo etiqueta="Nota" value={nota} onChangeText={setNota} placeholder="Opcional" />
-              {tipo !== 'traspaso' && (
+              {tipo !== 'traspaso' && tipo !== 'ajuste' && (
                 <Pressable onPress={() => setVerMas((x) => !x)}>
                   <Text style={{ color: c.acento, fontSize: 14 }}>{verMas ? 'Ocultar moneda' : '¿Pagaste en otra moneda?'}</Text>
                 </Pressable>
