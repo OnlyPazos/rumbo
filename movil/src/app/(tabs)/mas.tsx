@@ -3,7 +3,7 @@
  * Los perfiles son los del panel original de Rumbo (la cartera de tu pareja o de tus hijos, cada una aparte,
  * y «Todos juntos» para ver la suma).
  */
-import { Link, useFocusEffect, type Href } from 'expo-router';
+import { router, useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -144,15 +144,14 @@ export default function Mas() {
 
 function Enlace({ c, href, titulo, nota }: { c: Colores; href: Href; titulo: string; nota: string }) {
   return (
-    <Link href={href} asChild>
-      <Pressable style={[estilos.enlace, { borderColor: c.borde }]}>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: c.tinta, fontWeight: '600', fontSize: 16 }}>{titulo}</Text>
-          {nota ? <Text style={[estilos.pequeno, { color: c.tinta3 }]} numberOfLines={2}>{nota}</Text> : null}
-        </View>
-        <Text style={{ color: c.tinta3, fontSize: 20 }}>›</Text>
-      </Pressable>
-    </Link>
+    // Sin <Link asChild>: su <Slot> no admite un `style` en array en el hijo y la pantalla se cerraba.
+    <Pressable onPress={() => router.push(href)} accessibilityRole="link" style={[estilos.enlace, { borderColor: c.borde }]}>
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: c.tinta, fontWeight: '600', fontSize: 16 }}>{titulo}</Text>
+        {nota ? <Text style={[estilos.pequeno, { color: c.tinta3 }]} numberOfLines={2}>{nota}</Text> : null}
+      </View>
+      <Text style={{ color: c.tinta3, fontSize: 20 }}>›</Text>
+    </Pressable>
   );
 }
 
