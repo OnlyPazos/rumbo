@@ -20,10 +20,20 @@ const claro: typeof oscuro = {
 
 export type Colores = typeof oscuro;
 
+/** Los 12 colores de producto (--s1 … --s12 del panel original), en claro y en oscuro. */
+const SLOTS_CLARO = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948', '#0e8fb0', '#9a6a3a', '#5d6b8a', '#7c9a00'];
+const SLOTS_OSCURO = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767', '#2bb0d1', '#c08a55', '#93a1c2', '#9cc21a'];
+
 export const RADIO = 14;
 
 export function useColores(): Colores {
   return useColorScheme() === 'light' ? claro : oscuro;
+}
+
+/** Color de un hueco (1–12) de la paleta de productos. */
+export function colorSlot(slot: number | null | undefined, c: Colores) {
+  const i = Math.min(12, Math.max(1, slot || 1)) - 1;
+  return c === claro ? SLOTS_CLARO[i] : SLOTS_OSCURO[i];
 }
 
 /** Color de un producto: el motor da [claro, oscuro]. */

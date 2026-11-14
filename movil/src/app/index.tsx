@@ -140,9 +140,9 @@ export default function Panel() {
 
         {panel && !datos && (
           <Tarjeta c={c}>
+            <Link href="/editar-producto" style={{ color: c.acento, fontWeight: '700', marginBottom: 6 }}>+ Añadir un producto</Link>
             <Text style={{ color: c.tinta2 }}>
-              Tu cartera está vacía. Crea tus productos desde el panel web de Rumbo (en el ordenador) y anota aquí
-              sus compras y saldos con «+ Anotar».
+              Tu cartera está vacía. Empieza añadiendo tus productos y luego anota sus compras y saldos con «+ Anotar».
             </Text>
           </Tarjeta>
         )}
@@ -198,7 +198,12 @@ export default function Panel() {
               <Aportaciones datos={datos} productos={productos} desde={datos.fechas[i0]} c={c} />
             </Tarjeta>
 
-            <Text style={[estilos.seccion, { color: c.tinta }]}>Productos</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+              <Text style={[estilos.seccion, { color: c.tinta }]}>Productos</Text>
+              {datos.modo === 'propio' && (
+                <Link href="/editar-producto" style={{ color: c.acento, fontWeight: '700' }}>+ Nuevo</Link>
+              )}
+            </View>
             {productos.map((p) => <FilaProducto key={p.id} p={p} serie={corta(p.serie)} c={c} />)}
 
             {datos.avisos.length > 0 && (

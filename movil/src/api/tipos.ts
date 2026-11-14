@@ -300,15 +300,21 @@ export interface RespuestaPanel {
 
 // ---------------------------------------------------------------- otras respuestas
 
-/** GET /api/buscar (app/buscar.py → añade()). */
+/** GET /api/buscar (app/buscar.py): solo salen los que tienen precio (se comprueba antes). */
 export interface ResultadoBusqueda {
   fuente: Fuente;
   codigo: string;
   nombre: string | null;
   tipo: TipoProducto;
   identificador: string;
+  /** Id de CoinGecko para el precio en vivo de una cripto. */
   vivo: string | null;
-  bolsa: string | null;
+  mercado?: string | null;
+  precio?: number;
+  fecha?: FechaISO;
+  moneda?: string;
+  /** Lo que da Morningstar de un fondo: TER en % (0,12), riesgo 1–7, categoría y gestora. */
+  ficha?: { ter?: number; riesgo?: number; clase?: string; gestora?: string };
 }
 
 export interface CopiaSeguridad {

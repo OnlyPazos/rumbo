@@ -113,9 +113,14 @@ export default function Ficha() {
           title: p.corto || p.nombre,
           headerRight: editable
             ? () => (
-              <Link href={{ pathname: '/anotar', params: { producto: p.id } }} style={{ color: c.acento, fontSize: 15, fontWeight: '700' }}>
-                + Anotar
-              </Link>
+              <View style={{ flexDirection: 'row', gap: 18, alignItems: 'center' }}>
+                <Link href={{ pathname: '/editar-producto', params: { id: p.id } }} style={{ color: c.tinta2, fontSize: 15 }}>
+                  Editar
+                </Link>
+                <Link href={{ pathname: '/anotar', params: { producto: p.id } }} style={{ color: c.acento, fontSize: 15, fontWeight: '700' }}>
+                  + Anotar
+                </Link>
+              </View>
             )
             : undefined,
         }}

@@ -25,6 +25,7 @@ export default function Raiz() {
         <Stack.Screen name="escanear" options={{ title: 'Escanear QR', presentation: 'modal' }} />
         <Stack.Screen name="anotar" options={{ title: 'Anotar' }} />
         <Stack.Screen name="producto/[id]" options={{ title: 'Producto' }} />
+        <Stack.Screen name="editar-producto" options={{ title: 'Producto' }} />
         <Stack.Screen name="acerca" options={{ title: 'Acerca de' }} />
       </Stack>
     </ProveedorSesion>
