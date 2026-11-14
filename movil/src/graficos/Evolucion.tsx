@@ -15,7 +15,7 @@ import { useTactil } from './useTactil';
 const P = { t: 14, r: 12, b: 24, l: 52 };
 
 export function Evolucion({
-  fechas, valores, aportado, color, c, alto = 240,
+  fechas, valores, aportado, color, c, alto = 240, nombre = 'Patrimonio', desdeCero = true, formato = fmtEuros, formatoEje = fmtEurCorto,
 }: {
   fechas: string[];
   valores: (number | null)[];
@@ -23,6 +23,14 @@ export function Evolucion({
   color: string;
   c: Colores;
   alto?: number;
+  /** Cómo se llama la línea en la leyenda. */
+  nombre?: string;
+  /** false para precios: el eje empieza cerca del mínimo, no en cero (desdeCero en graficos.js). */
+  desdeCero?: boolean;
+  /** Formato del valor en el globo (por defecto, euros sin decimales). */
+  formato?: (v: number | null) => string;
+  /** Formato de las cifras del eje Y (por defecto, euros cortos: 12,5k €). */
+  formatoEje?: (v: number) => string;
 }) {
   const [ancho, setAncho] = useState(0);
   const n = fechas.length;
@@ -35,7 +43,9 @@ export function Evolucion({
     return <Text style={{ color: c.tinta3, paddingVertical: 40, textAlign: 'center' }}>Sin datos en este periodo.</Text>;
   }
 
-  const e = escalaBonita(Math.max(...validos), Math.min(0, ...validos));
+  const maxV = Math.max(...validos);
+  const minV = Math.min(...validos);
+  const e = escalaBonita(maxV, desdeCero ? Math.min(0, minV) : minV - (maxV - minV) * 0.12);
   const x = (i: number) => P.l + (n === 1 ? iw / 2 : (i * iw) / (n - 1));
   const y = (v: number) => P.t + ih - ((v - e.min) / (e.max - e.min)) * ih;
 
@@ -58,7 +68,7 @@ export function Evolucion({
           ))}
           {lineasRejilla(e).map((g) => (
             <SvgText key={`t${g}`} x={P.l - 6} y={y(g) + 4} fontSize={10} fill={c.tinta3} textAnchor="end">
-              {fmtEurCorto(g)}
+              {formatoEje(g)}
             </SvgText>
           ))}
           {indicesEjeX(n, ancho < 400 ? 3 : 5).map((i, k, todos) => (
@@ -90,7 +100,7 @@ export function Evolucion({
             x(indice) > ancho / 2 ? { left: P.l + 4 } : { right: P.r + 4 }]}
         >
           <Text style={{ color: c.tinta3, fontSize: 11 }}>{fmtFecha(fechas[indice])}</Text>
-          <Text style={{ color: c.tinta, fontWeight: '700', fontSize: 15 }}>{fmtEuros(v)}</Text>
+          <Text style={{ color: c.tinta, fontWeight: '700', fontSize: 15 }}>{formato(v)}</Text>
           {a != null && v != null && (
             <>
               <Text style={{ color: c.tinta2, fontSize: 11 }}>Aportado {fmtEuros(a)}</Text>
@@ -104,7 +114,7 @@ export function Evolucion({
 
       <View style={estilos.leyenda}>
         <View style={[estilos.marca, { backgroundColor: color }]} />
-        <Text style={[estilos.textoLeyenda, { color: c.tinta2 }]}>Patrimonio</Text>
+        <Text style={[estilos.textoLeyenda, { color: c.tinta2 }]}>{nombre}</Text>
         {aportado && (
           <>
             <View style={[estilos.marca, { backgroundColor: c.tinta2, opacity: 0.6, height: 2 }]} />

@@ -3,7 +3,7 @@
  * Cifras clave, evolución, reparto, aportaciones de cada mes y la lista de productos.
  * El periodo elegido (1M … Todo) vale para la evolución, las aportaciones y las mini gráficas.
  */
-import { Link, Redirect, Stack, useFocusEffect } from 'expo-router';
+import { Link, Redirect, router, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 // ScrollView y RefreshControl de gesture-handler: coordinan en nativo el scroll con los gráficos que se arrastran.
@@ -247,7 +247,10 @@ function Aportaciones({ datos, productos, desde, c }: { datos: PanelDatos; produ
 function FilaProducto({ p, serie, c }: { p: ProductoCalculado; serie: (number | null)[]; c: Colores }) {
   const color = colorDe(p.slotColor, c);
   return (
-    <View style={[estilos.producto, { backgroundColor: c.sup, borderColor: c.borde }]}>
+    <Pressable
+      onPress={() => router.push({ pathname: '/producto/[id]', params: { id: p.id } })}
+      style={[estilos.producto, { backgroundColor: c.sup, borderColor: c.borde }]}
+    >
       <View style={[estilos.punto, { backgroundColor: color }]} />
       <View style={{ flex: 1 }}>
         <Text style={{ color: c.tinta, fontWeight: '600' }} numberOfLines={1}>{p.corto || p.nombre}</Text>
@@ -258,7 +261,7 @@ function FilaProducto({ p, serie, c }: { p: ProductoCalculado; serie: (number | 
         <Text style={{ color: c.tinta, fontWeight: '600' }}>{fmtEuros(p.valor)}</Text>
         <Text style={[estilos.pequeno, { color: colorSigno(p.rentabilidad, c) }]}>{fmtPct(p.rentabilidad)}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
