@@ -10,6 +10,33 @@ import * as C from '../src/calculos.ts';
 
 const cerca = (a: number | null, b: number, tol = 0.01) => assert.ok(Math.abs((a as number) - b) <= tol, `${a} no está cerca de ${b}`);
 
+test("países y sectores: cada producto pesa lo que vale, y solo su parte en bolsa", () => {
+  const prods: C.ProductoParaCalculo[] = [
+    { valor: 6000, exposicion: { rv: 1, paises: [["Estados Unidos", 70], ["Japón", 30]], sectores: [["Tecnología", 100]] } },
+    { valor: 4000, exposicion: { rv: 0.5, paises: [["Japón", 100]], sectores: [["Salud", 100]] } },   // mixto
+    { valor: 1000, tipoClave: "efectivo" },                                                           // cuenta
+    { valor: 500, tipoClave: "pension", corto: "Plan" },                                              // sin datos
+    { valor: 0, exposicion: { paises: [["China", 100]], sectores: [] } },                              // vendido
+  ];
+  const r = C.agregaExposicion(prods);
+  assert.equal(r.enBolsa, 8000);
+  assert.equal(r.fuera, 3000);                       // 2.000 de renta fija del mixto + la cuenta
+  assert.equal(r.sinDatos, 500);
+  assert.deepEqual(r.sinNombre, ["Plan"]);
+  assert.deepEqual(r.paises, [["Estados Unidos", 52.5], ["Japón", 47.5]]);
+  assert.deepEqual(r.sectores, [["Tecnología", 75], ["Salud", 25]]);
+});
+
+test("países: los 9 mayores y el resto en «Otros» (también el «Resto» de las fichas)", () => {
+  // 12 países que suman 100 % (como las fichas de Morningstar) y un «Resto» vacío.
+  const paises: [string, number][] = Array.from({ length: 12 }, (_, i): [string, number] => ["P" + i, (12 - i) * 100 / 78]).concat([["Resto", 0]]);
+  const r = C.agregaExposicion([{ valor: 1000, exposicion: { paises, sectores: [] } }]);
+  assert.equal(r.paises.length, 10);
+  assert.equal(r.paises[9][0], "Otros");
+  cerca(r.paises.reduce((a, x) => a + x[1], 0), 100, 0.3);
+  assert.deepEqual(C.agregaExposicion([{ valor: 100, tipoClave: "cripto" }]).paises, []);
+});
+
 test("liquidez: cuentas y monetarios, o lo que marques", () => {
   assert.ok(C.esLiquidez({ tipoClave: "efectivo" }));
   assert.ok(C.esLiquidez({ tipoClave: "fondo", clase: "Mercado Monetario Corto Plazo EUR" }));

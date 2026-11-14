@@ -47,7 +47,7 @@ src/
   compartir.ts            compartir un archivo (menú del sistema; descarga en web)
   formato.ts              números y fechas en es-ES (numEs entiende lo mismo que el backend)
   periodicas.ts           qué aportaciones periódicas toca anotar (portado de calculos.js, con sus pruebas)
-  calculos.ts             liquidez, reparto objetivo y objetivo (portado de calculos.js, con sus pruebas)
+  calculos.ts             países y sectores, liquidez, reparto objetivo y objetivo (portado de calculos.js, con sus pruebas)
   tema.ts                 colores del panel original, claro y oscuro
 tests/                    pruebas de los cálculos (npm test, con node --test)
 ```
@@ -68,8 +68,7 @@ npx expo-doctor
 
 ## Pendiente
 
-- Lo que aún solo está en el panel web: ajustes de participaciones, «dónde está tu dinero» (países y sectores), copias de seguridad, exportar a Excel
-  y «Compartir mi mes».
+- Lo que aún solo está en el panel web: ajustes de participaciones, copias de seguridad, exportar a Excel y «Compartir mi mes».
 - Builds de tienda: Rumbo va por HTTP dentro de casa / Tailscale. En Android hará falta permitir tráfico sin TLS
   (`expo-build-properties` → `android.usesCleartextTraffic`), y en iOS revisar ATS para las IP de Tailscale (100.x),
   o poner Rumbo detrás de HTTPS (Tailscale Serve).

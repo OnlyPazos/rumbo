@@ -13,6 +13,7 @@ import { ErrorRumbo } from '@/api/cliente';
 import type { PanelDatos, ProductoCalculado } from '@/api/tipos';
 import { AvisosPeriodicas } from '@/componentes/AvisosPeriodicas';
 import { PieCreditos } from '@/componentes/Creditos';
+import { DondeEstaTuDinero } from '@/componentes/Exposicion';
 import { Liquidez, ProgresoObjetivo, RepartoObjetivo } from '@/componentes/Metas';
 import { confirmar } from '@/componentes/Formulario';
 import { Segmentos } from '@/componentes/Segmentos';
@@ -173,6 +174,7 @@ export default function Panel() {
               <Donut key={reparto} c={c} datos={datosReparto(datos, productos, reparto, c)} />
             </Tarjeta>
 
+            <DondeEstaTuDinero productos={productos} c={c} />
             <Liquidez datos={datos} productos={productos} c={c} editable={datos.modo === 'propio'} />
             <RepartoObjetivo datos={datos} productos={productos} c={c} editable={datos.modo === 'propio'} />
 

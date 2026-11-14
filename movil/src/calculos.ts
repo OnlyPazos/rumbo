@@ -16,10 +16,72 @@ export interface ProductoParaCalculo {
   valor?: number;
   liquidez?: boolean | null;
   largoPlazo?: boolean;
+  exposicion?: Exposicion | null;
+}
+
+/** Qué hay dentro de un fondo o ETF: reparto por países y sectores en % (de Morningstar o de la ficha del índice). */
+export interface Exposicion {
+  /** Parte en bolsa del producto (1 si no se dice: todo). */
+  rv?: number | null;
+  paises?: [string, number][];
+  sectores?: [string, number][];
+  top10?: [string, number][];
+  actualizado?: string;
+  fuente?: string;
+  constituyentes?: number;
+  /** Es una sola empresa (una acción). */
+  empresa?: boolean;
 }
 
 type ValorDe<P> = (p: P) => number;
 const valorPorDefecto = (p: ProductoParaCalculo) => p.valor || 0;
+
+// ---------------------------------------------------------------- dónde está tu dinero (países y sectores)
+
+const FUERA_DE_BOLSA = ['efectivo', 'cripto', 'commodity', 'inmueble', 'bono', 'p2p'];
+
+/**
+ * Suma el reparto por países y sectores de cada producto según lo que vale. Solo la
+ * parte en bolsa de cada uno (rv); lo demás va a «fuera», y lo que no tiene datos a
+ * «sinDatos». Devuelve los 9 mayores y «Otros», en % de lo que tienes en bolsa.
+ */
+export function agregaExposicion<P extends ProductoParaCalculo>(lista: P[], valorDe: ValorDe<P> = valorPorDefecto) {
+  let enBolsa = 0;
+  let fuera = 0;
+  let sinDatos = 0;
+  const paises = new Map<string, number>();
+  const sectores = new Map<string, number>();
+  const sinNombre: string[] = [];
+  const suma = (m: Map<string, number>, n: string, v: number) => m.set(n, (m.get(n) || 0) + v);
+  lista.forEach((p) => {
+    const v = valorDe(p);
+    if (!(v > 0)) return;
+    const e = p.exposicion;
+    // Cuentas, cripto, oro, pisos…: no están en bolsa aunque no tengan ficha.
+    if (!e && FUERA_DE_BOLSA.includes(p.tipoClave ?? '')) {
+      fuera += v;
+      return;
+    }
+    if (!e) {
+      sinDatos += v;
+      sinNombre.push(p.corto || p.nombre || '');
+      return;
+    }
+    const rv = e.rv == null ? 1 : e.rv;
+    const vb = v * rv;
+    enBolsa += vb;
+    fuera += v - vb;
+    (e.paises || []).forEach(([n, pct]) => suma(paises, n === 'Resto' ? 'Otros' : n, (vb * pct) / 100));
+    (e.sectores || []).forEach(([n, pct]) => suma(sectores, n === 'Resto' ? 'Otros' : n, (vb * pct) / 100));
+  });
+  const ordena = (m: Map<string, number>): [string, number][] => {
+    if (!(enBolsa > 0)) return [];
+    const filas = [...m.entries()].filter(([n]) => n !== 'Otros').sort((a, b) => b[1] - a[1]);
+    const otros = (m.get('Otros') || 0) + filas.slice(9).reduce((a, x) => a + x[1], 0);
+    return filas.slice(0, 9).concat(otros > 0 ? [['Otros', otros]] : []).map(([n, v]) => [n, +((v / enBolsa) * 100).toFixed(1)]);
+  };
+  return { enBolsa, fuera, sinDatos, sinNombre, paises: ordena(paises), sectores: ordena(sectores) };
+}
 
 // ---------------------------------------------------------------- liquidez y fondo de emergencia
 

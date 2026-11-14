@@ -1,3 +1,5 @@
+import type { Exposicion } from '@/calculos';
+
 /**
  * Tipos de la API de Rumbo (backend Flask de Dani Dominguez Quant: github.com/danidm98/rumbo).
  *
@@ -174,6 +176,8 @@ export interface AportacionCalculada {
  * («Fondo indexado») y la clave («fondo») va en `tipoClave`; en la cartera es al revés.
  */
 export interface ProductoCalculado extends ProductoBase {
+  /** Países, sectores y mayores posiciones (fondos, ETF, planes y acciones con ficha). */
+  exposicion?: Exposicion | null;
   tipo: string;
   tipoClave: TipoProducto;
   fuentePrecio: string;

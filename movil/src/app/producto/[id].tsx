@@ -11,6 +11,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { ErrorRumbo } from '@/api/cliente';
 import type { Cartera, Modo, Movimiento, PanelDatos, ProductoCalculado, Valoracion } from '@/api/tipos';
 import { PieCreditos } from '@/componentes/Creditos';
+import { QueHayDentro } from '@/componentes/Exposicion';
 import { Segmentos } from '@/componentes/Segmentos';
 import { fmtEuros, fmtFecha, fmtPct, fmtUnidades } from '@/formato';
 import { RANGOS, desdeIdx, type Rango } from '@/graficos/escala';
@@ -192,6 +193,8 @@ export default function Ficha() {
             </View>
           </Tarjeta>
         )}
+
+        <QueHayDentro e={p.exposicion} color={color} fechaExtracto={datos.fechaExtracto} c={c} />
 
         <Tarjeta c={c}>
           <Text style={[estilos.titulo, { color: c.tinta }]}>Datos</Text>
